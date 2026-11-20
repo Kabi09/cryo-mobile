@@ -53,12 +53,12 @@
 - Error handling: Graceful empty states, error alerts, and 404/unauthorized screens.
 
 ## API / Backend Integration
-- Integration status: Pending backend development. Frontend architecture uses Axios client configured with `VITE_API_BASE_URL` and `VITE_DATA_MODE=mock`.
-- API endpoints: Marked pending.
+- Integration status: Backend complete and operational under `server/` with Node.js, Express.js, MongoDB (Mongoose), ES Modules, and JWT auth. Frontend mock state in root is preserved for future Phase 5 API wiring.
+- API endpoints: 45+ REST endpoints prefixed at `/api/v1` covering Auth, Master Data, Employees, Sales, Production, Supply Chain, Logistics, Admin, and Reports.
 - Request methods: Standard REST patterns (GET, POST, PUT, DELETE).
-- Payload structures: Aligned with mock store schema for seamless replacement.
-- Response handling: Centralized Axios interceptors for simulated error handling.
-- Authentication requirements: Bearer token header reserved for future JWT integration.
+- Payload structures: Validated with strict Joi schemas; standard JSON response envelope `{ success, message, data, meta }`.
+- Authentication requirements: Dual JWT (15-minute access token + 7-day rotated refresh token) with granular RBAC permissions.
+- Database: MongoDB Server 8.0.4 with 24 business entity collections, atomic sequence counters, and immutable stock movement ledger.
 
 ## Components
 
@@ -97,6 +97,22 @@
 ## Change History
 
 ### 2026-11-20
+- **Phase 4 Complete: Cryo Enterprise ERP Backend Architecture, Database & Complete API Development**:
+  - **Modular Monolithic Backend (`server/`)**: Initialized with Express.js, Mongoose, ES Modules, JWT auth (access & refresh rotation), bcrypt password hashing, Joi validation, Helmet, CORS, and Morgan.
+  - **Atomic Concurrency Counters (`server/src/utils/counter.js`)**: Implemented MongoDB atomic `$inc` sequence generator for all ERP documents (`SO-xxx`, `PRO-xxx`, `MR-xxx`, `PO-xxx`, `GRN-xxx`, `DEL-xxx`, `DC-xxx`, etc.).
+  - **Master Data Models & APIs (`/api/v1/master/*`)**: Customer, Product, Material, Supplier, Vehicle, CourierProvider with text search and unique constraints.
+  - **Auth & Access Control (`/api/v1/auth/*`, `/api/v1/employees/*`)**: Implemented JWT authentication, password management, and granular RBAC permissions (`view`, `create`, `edit`, `workflow`) supporting all 5 personas.
+  - **Sales Backend (`/api/v1/sales/*`)**: Models and controllers for Enquiry (qualify, follow-up), Quotation (v1 -> v2 price negotiation revision, acceptance), Proforma Invoice, Customer PO, Customer Payment (advance verification), and confirmed Sales Order (`SO-001`).
+  - **Production Backend (`/api/v1/production/*`)**: Models and controllers for Production Order (`PRO-001`), BOM confirmation (`BOM-001`), Material Request (`MR-001`), Shopfloor Material Receipt (`RCPT-001`, verified without duplicate inventory deduction), Daily Updates (25% to 100%), and Quality Inspection (`QC-001` passed, triggering Logistics handover).
+  - **Supply Chain Backend (`/api/v1/supply-chain/*`)**: Models and controllers for Purchase Orders (`PO-001`, stock unchanged), Goods Receipt Notes (`GRN-001`, atomic stock increment), Material Issues (`MI-001` partial, `MI-002` full, atomic stock deduction with negative stock validation), Stock Movements ledger, and Stock Adjustments.
+  - **Logistics & Delivery Backend (`/api/v1/logistics/*`)**: Models and controllers for Delivery Order (`DEL-001`), Packing Record (`PKG-001`), Delivery Challan (`DC-001`), Vehicle Dispatch (marks vehicle In Transit), and Proof of Delivery (`POD-001` with collection of final ₹50,000 balance payment, vehicle release, and full order settlement).
+  - **Centralized Admin & Reports (`/api/v1/admin/*`, `/api/v1/reports/*`)**: Executive dashboard metrics, 22-stage end-to-end order journey aggregator, administrative order hold/resume/cancel, audit logs, and 7 business reports (Sales, Production, Inventory, Procurement, Logistics, Financials, Order Status).
+  - **Demo Seed Script (`npm run seed:demo`)**: Created `server/src/scripts/seed.js` cleanly dropping and populating MongoDB with master data, all 5 personas, and the golden order `SO-001` through all 22 lifecycle stages.
+  - **Automated Test Suite (`npm test`)**: 12/12 unit and integration tests passing with Supertest and Jest covering Auth, 22-Stage Journey, Admin Reporting, and Inventory Invariants.
+  - **Comprehensive Documentation**: Created `docs/BACKEND_REQUIREMENTS.md`, `docs/DATABASE_SCHEMA.md`, `docs/API_DOCUMENTATION.md`, `docs/FRONTEND_API_MAPPING.md`, `docs/PHASE_4_COMPLETION.md`, and updated `AGENTS.md`.
+  - **Frontend Verification**: Root React frontend preserved completely, builds with 0 errors (`npm run build`), and passes linting with 0 errors (`npm run lint`).
+
+
 
 #### Change
 - What was changed: Completed Batch 3A – Complete repository inspection, screen inventory mapping, navigation architecture mapping, workflow mapping, and initial documentation.

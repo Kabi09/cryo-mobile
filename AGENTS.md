@@ -173,3 +173,25 @@ Use only the sub-elements required by each component; do not render empty markup
 
 - The `design/` folder is read-only.
 - **NEVER** delete, modify, or overwrite original HTML design references.
+
+---
+
+## 8. Backend Architecture, Database & API Rules (Phase 4+)
+
+1. **Location & Structure**:
+   - The backend lives strictly inside the `server/` directory.
+   - Node.js ES Modules (`"type": "module"`), Express.js, MongoDB (Mongoose), Joi, JWT, bcryptjs.
+   - Modular monolithic structure serving all departments: `controllers/`, `models/`, `routes/`, `services/`, `middleware/`, `utils/`, `validators/`.
+2. **Document Numbering Invariance**:
+   - **NEVER** generate document IDs using `Model.countDocuments() + 1`.
+   - Always use the atomic counter sequence generator (`getNextSequence(prefix)` via `server/src/utils/counter.js`) to guarantee concurrency safety and prevent ID collisions.
+3. **Inventory & Manufacturing Invariants**:
+   - Creating a Purchase Order (PO) must **NOT** increment inventory.
+   - Confirming a Goods Receipt Note (GRN) must increment `Material.currentStock` atomically and write an immutable `StockMovement` entry (`GRN_RECEIPT`).
+   - Material Issue (MI) must decrement `Material.currentStock` atomically, write a `StockMovement` entry (`MATERIAL_ISSUE`), and strictly reject requests if available stock is insufficient.
+   - Production Material Receipt confirms shopfloor physical handover and does **NOT** double-decrement warehouse inventory.
+4. **ID vs Code Query Safety**:
+   - Use `buildIdOrCodeQuery` (`server/src/utils/queryHelper.js`) for lookups by route parameter to safely handle human-readable codes (`SO-001`, `PRO-001`) without causing Mongoose `CastError` on non-ObjectId strings.
+5. **Testing & Seeding**:
+   - Every backend feature must be verified using Jest/Supertest (`npm test` inside `server/`).
+   - Maintain the golden order demo dataset (`SO-001`, ABC Laboratory, Deep Freezer -80°C) callable via `npm run seed:demo`.
