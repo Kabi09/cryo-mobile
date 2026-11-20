@@ -1,0 +1,58 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+  padding-bottom: $spacing-2;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $spacing-2;
+
+      .topleft {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+        min-width: 0;
+
+        .backBtn {
+          background-color: $color-slate-100;
+          border-radius: $radius-md;
+        }
+
+        .titleGroup {
+          min-width: 0;
+
+          .title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: $color-slate-900;
+            line-height: 1.25;
+            @include text-truncate;
+          }
+
+          .subtitle {
+            font-size: 0.75rem;
+            color: $color-slate-500;
+            line-height: 1.2;
+            display: block;
+            margin-top: 2px;
+            @include text-truncate;
+          }
+        }
+      }
+
+      .topright {
+        display: flex;
+        align-items: center;
+        gap: $spacing-2;
+        flex-shrink: 0;
+      }
+    }
+  }
+}

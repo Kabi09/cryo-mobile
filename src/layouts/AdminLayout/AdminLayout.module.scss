@@ -1,0 +1,27 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: $color-slate-50;
+  position: relative;
+
+  .wrapper {
+    flex: 1;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: $spacing-3 $spacing-3 ($bottom-nav-height + 24px);
+    box-sizing: border-box;
+
+    .middlerow {
+      width: 100%;
+
+      .middlecenter {
+        width: 100%;
+      }
+    }
+  }
+}

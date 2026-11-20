@@ -1,0 +1,32 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .middlerow {
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-2;
+
+        .card {
+          @include standard-card;
+          cursor: pointer;
+          transition: transform 0.15s ease;
+
+          &:hover {
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+  }
+}

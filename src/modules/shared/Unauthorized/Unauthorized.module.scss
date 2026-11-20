@@ -1,0 +1,43 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-4;
+
+  .wrapper {
+    width: 100%;
+    max-width: 420px;
+
+    .toprow {
+      margin-bottom: $spacing-3;
+
+      .topcenter {
+        display: flex;
+        justify-content: center;
+
+        .iconCircle {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background-color: #FEE2E2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+    }
+
+    .middlerow {
+      .middlecenter {
+        .card {
+          @include standard-card;
+          border-radius: $radius-xl;
+        }
+      }
+    }
+  }
+}

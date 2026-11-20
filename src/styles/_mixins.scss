@@ -1,0 +1,55 @@
+@use './variables' as *;
+
+// Standard Container Layout Mixin matching Section 12
+@mixin standard-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacing-3 $spacing-4;
+  box-sizing: border-box;
+
+  @media (max-width: $tablet-breakpoint) {
+    padding: $spacing-2 $spacing-3;
+  }
+}
+
+@mixin standard-card {
+  background: $color-white;
+  border: 1px solid $color-slate-200;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: $color-slate-300;
+  }
+}
+
+@mixin text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin responsive-grid($min-col-width: 280px) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($min-col-width, 1fr));
+  gap: $spacing-3;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}

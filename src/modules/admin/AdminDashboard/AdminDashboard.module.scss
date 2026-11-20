@@ -1,0 +1,46 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .middlerow {
+      .metricsGrid {
+        @include responsive-grid(150px);
+      }
+
+      .journeyCard {
+        @include standard-card;
+        border-radius: $radius-lg;
+      }
+
+      .deptCard {
+        @include standard-card;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: $shadow-md;
+        }
+      }
+    }
+
+    .bottomrow {
+      margin-top: $spacing-4;
+
+      .quickAccessRow {
+        display: flex;
+        gap: $spacing-2;
+        flex-wrap: wrap;
+      }
+    }
+  }
+}

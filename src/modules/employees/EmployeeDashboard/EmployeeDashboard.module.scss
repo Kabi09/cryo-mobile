@@ -1,0 +1,35 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .middlerow {
+      .metricsGrid {
+        @include responsive-grid(150px);
+      }
+
+      .card {
+        @include standard-card;
+        border-radius: $radius-lg;
+      }
+    }
+
+    .bottomrow {
+      margin-top: $spacing-4;
+
+      .quickAccessRow {
+        display: flex;
+        gap: $spacing-2;
+        flex-wrap: wrap;
+      }
+    }
+  }
+}

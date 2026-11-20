@@ -1,0 +1,23 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .middlerow {
+      .middlecenter {
+        .card {
+          @include standard-card;
+          border-radius: $radius-lg;
+        }
+      }
+    }
+  }
+}

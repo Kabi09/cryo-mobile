@@ -1,0 +1,32 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .middlerow {
+      .middlecenter {
+        .card {
+          @include standard-card;
+
+          .iconCircle {
+            width: 32px;
+            height: 32px;
+            border-radius: $radius-md;
+            background-color: $color-light-blue;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,84 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .headerCard {
+      @include standard-card;
+      border-radius: $radius-lg;
+    }
+
+    .middlerow {
+      .timelineList {
+        display: flex;
+        flex-direction: column;
+
+        .timelineItem {
+          display: flex;
+          gap: $spacing-2;
+
+          .indicatorCol {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 24px;
+
+            .circle {
+              width: 24px;
+              height: 24px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: $color-slate-400;
+            }
+
+            .line {
+              flex: 1;
+              width: 2px;
+              background-color: $color-slate-200;
+              min-height: 20px;
+            }
+          }
+
+          .contentCol {
+            flex: 1;
+            padding-bottom: $spacing-2;
+
+            .stageCard {
+              @include standard-card;
+              border-radius: $radius-md;
+            }
+          }
+
+          &.completed {
+            .indicatorCol {
+              .circle {
+                color: $color-success;
+              }
+              .line {
+                background-color: $color-success-border;
+              }
+            }
+          }
+
+          &.current {
+            .contentCol {
+              .stageCard {
+                border-color: $color-royal-blue;
+                box-shadow: $shadow-md;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

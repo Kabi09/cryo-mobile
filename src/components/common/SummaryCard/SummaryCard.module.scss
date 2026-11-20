@@ -1,0 +1,74 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  @include standard-card;
+  padding: $spacing-3;
+  position: relative;
+
+  &.clickable {
+    cursor: pointer;
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $spacing-1;
+
+      .topleft {
+        min-width: 0;
+
+        .title {
+          font-weight: 600;
+          color: $color-slate-600;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          @include text-truncate;
+        }
+      }
+
+      .topright {
+        .iconCircle {
+          width: 28px;
+          height: 28px;
+          border-radius: $radius-md;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+    }
+
+    .middlerow {
+      margin-top: 4px;
+
+      .middlecenter {
+        .value {
+          font-weight: 700;
+          font-size: 1.25rem;
+          line-height: 1.2;
+        }
+      }
+    }
+
+    .bottomrow {
+      margin-top: 4px;
+
+      .bottomleft {
+        .subtitle {
+          font-size: 0.6875rem;
+          color: $color-slate-500;
+          @include text-truncate;
+        }
+      }
+    }
+  }
+}

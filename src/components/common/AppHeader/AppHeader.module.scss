@@ -1,0 +1,103 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+  background-color: $color-white;
+  border-bottom: 1px solid $color-slate-200;
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  box-shadow: $shadow-sm;
+
+  .adminBanner {
+    background-color: $color-navy-dark;
+    color: $color-white;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+
+    .adminBannerText {
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+  }
+
+  .wrapper {
+    @include standard-container;
+    padding-top: 6px;
+    padding-bottom: 6px;
+
+    .toprow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $spacing-2;
+
+      .topleft {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+
+        .logoBadge {
+          display: flex;
+          align-items: center;
+          gap: $spacing-2;
+          cursor: pointer;
+          user-select: none;
+
+          .logoSymbol {
+            width: 30px;
+            height: 30px;
+            border-radius: $radius-md;
+            background: linear-gradient(135deg, $color-navy-primary, $color-royal-blue);
+            color: $color-white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9375rem;
+          }
+
+          .brandMeta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+
+            .brandTitle {
+              font-weight: 700;
+              font-size: 0.8125rem;
+              line-height: 1.1;
+              color: $color-slate-900;
+              @include text-truncate;
+            }
+
+            .deptBadge {
+              font-weight: 600;
+              font-size: 0.6875rem;
+              line-height: 1.1;
+              @include text-truncate;
+            }
+          }
+        }
+      }
+
+      .topright {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        .personaSelect {
+          max-width: 130px;
+
+          @media (max-width: 480px) {
+            max-width: 105px;
+          }
+        }
+      }
+    }
+  }
+}

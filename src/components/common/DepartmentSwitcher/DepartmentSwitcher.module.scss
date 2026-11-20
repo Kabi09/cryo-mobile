@@ -1,0 +1,53 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 290px;
+  max-width: 85vw;
+  height: 100%;
+  background-color: $color-white;
+  display: flex;
+  flex-direction: column;
+
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: $spacing-4 0;
+
+    .toprow {
+      padding: 0 $spacing-4;
+
+      .topleft {
+        .title {
+          font-weight: 700;
+          color: $color-navy-dark;
+        }
+
+        .subtitle {
+          color: $color-slate-500;
+          display: block;
+          margin-top: 2px;
+        }
+      }
+    }
+
+    .middlerow {
+      flex: 1;
+      overflow-y: auto;
+
+      .middlecenter {
+        width: 100%;
+      }
+    }
+
+    .bottomrow {
+      padding: $spacing-2 $spacing-4 0;
+
+      .bottomleft {
+        display: flex;
+        justify-content: center;
+      }
+    }
+  }
+}

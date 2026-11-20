@@ -1,0 +1,72 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-4;
+
+      .topcenter {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+
+        .brandIcon {
+          width: 56px;
+          height: 56px;
+          border-radius: $radius-xl;
+          background: linear-gradient(135deg, $color-navy-primary, $color-royal-blue);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: $spacing-2;
+          box-shadow: $shadow-md;
+        }
+
+        .brandTitle {
+          font-weight: 800;
+          color: $color-navy-dark;
+          letter-spacing: -0.5px;
+        }
+
+        .brandSubtitle {
+          color: $color-slate-500;
+          font-weight: 500;
+          margin-top: 2px;
+        }
+      }
+    }
+
+    .middlerow {
+      .middlecenter {
+        .loginCard {
+          @include standard-card;
+          border-radius: $radius-xl;
+          box-shadow: $shadow-md;
+        }
+
+        .forgotLink {
+          font-size: 0.8125rem;
+          color: $color-royal-blue;
+          font-weight: 500;
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .bottomrow {
+      margin-top: $spacing-4;
+
+      .bottomcenter {
+        text-align: center;
+      }
+    }
+  }
+}

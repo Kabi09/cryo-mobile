@@ -1,0 +1,90 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .flowStrip {
+      background-color: $color-white;
+      border: 1px solid $color-slate-200;
+      border-radius: $radius-lg;
+      padding: $spacing-2 $spacing-3;
+      margin-bottom: $spacing-3;
+
+      .stepperContainer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+
+        .stepItem {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: $color-slate-500;
+          white-space: nowrap;
+
+          .stepNum {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: $color-slate-200;
+            color: $color-slate-700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            font-weight: 700;
+          }
+
+          &.active {
+            color: $color-dept-logistics;
+
+            .stepNum {
+              background-color: $color-dept-logistics;
+              color: $color-white;
+            }
+          }
+        }
+
+        .stepLine {
+          flex: 1;
+          height: 2px;
+          background-color: $color-slate-200;
+          min-width: 12px;
+        }
+      }
+    }
+
+    .middlerow {
+      .metricsGrid {
+        @include responsive-grid(150px);
+      }
+
+      .delCard {
+        @include standard-card;
+      }
+    }
+
+    .bottomrow {
+      margin-top: $spacing-4;
+
+      .quickAccessRow {
+        display: flex;
+        gap: $spacing-2;
+        flex-wrap: wrap;
+      }
+    }
+  }
+}

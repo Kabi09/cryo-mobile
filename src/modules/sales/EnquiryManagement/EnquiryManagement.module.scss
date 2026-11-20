@@ -1,0 +1,41 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.container {
+  width: 100%;
+
+  .wrapper {
+    width: 100%;
+
+    .toprow {
+      margin-bottom: $spacing-2;
+    }
+
+    .searchBarRow {
+      background-color: $color-white;
+      border: 1px solid $color-slate-200;
+      border-radius: $radius-lg;
+      padding: $spacing-3;
+      margin-bottom: $spacing-3;
+    }
+
+    .middlerow {
+      .enquiriesList {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-2;
+
+        .enquiryCard {
+          @include standard-card;
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: $shadow-md;
+          }
+        }
+      }
+    }
+  }
+}
