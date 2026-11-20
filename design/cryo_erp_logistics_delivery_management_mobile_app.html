@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cryo ERP – Logistics & Delivery Management Mobile App</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --navy:#1E3A8A; --royal:#1D4ED8; --bg:#F8FAFC; --card:#FFFFFF; --border:#E2E8F0; --text:#0F172A; }
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; background: #EEF2F6; color: var(--text); overflow-x: hidden; }
+    .phone-shell {
+      width: 390px; max-width: 100%; height: 820px; max-height: calc(100vh - 76px);
+      background: var(--bg); border-radius: 36px; border: 8px solid #0F172A;
+      box-shadow: 0 24px 60px -15px rgba(15, 23, 42, 0.28);
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    @media (max-width: 520px) {
+      .phone-shell { width: 100%; height: calc(100vh - 56px); max-height: none; border-radius: 0; border: none; box-shadow: none; }
+    }
+    .phone-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .phone-scroll::-webkit-scrollbar { width: 4px; }
+    .phone-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: flex-end; z-index: 40; animation: fadeIn 0.16s ease-out; }
+    .sheet-panel { width: 100%; max-height: 88%; background: #FFF; border-top-left-radius: 20px; border-top-right-radius: 20px; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(24px); opacity: 0.9; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulseBg { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    .skeleton { animation: pulseBg 1.4s ease-in-out infinite; background: #E2E8F0; border-radius: 6px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .toast-bar { position: absolute; top: 46px; left: 14px; right: 14px; z-index: 60; animation: fadeIn 0.16s ease-out; }
+    .gallery-mini-phone { width: 100%; aspect-ratio: 9 / 16; max-height: 360px; background: #F8FAFC; border: 3px solid #1E293B; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .gallery-mini-phone:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(30, 58, 138, 0.2); border-color: #1D4ED8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Toolbar (Single Unified Logistics Workspace — No Role/Driver Split) -->
+  <header class="bg-white border-b border-slate-200 px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button id="toggleSidebarBtn" type="button" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Toggle menu">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm shrink-0">C</div>
+      <div class="min-w-0">
+        <div class="font-semibold text-sm text-slate-900 truncate">Cryo ERP – Logistics & Delivery</div>
+        <div class="text-[11px] text-slate-500 truncate hidden sm:block">Single Shared Workspace • 58 Mobile Screens</div>
+      </div>
+    </div>
+
+    <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+      <button id="modePhoneBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">App</span></button>
+      <button id="modeGalleryBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">All 58</span></button>
+      <button id="modeFlowBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="git-branch" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Flow</span></button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex relative overflow-hidden">
+    <!-- Left Guided Flow / All 58 Screens Sidebar -->
+    <aside id="screenSidebar" class="fixed lg:static inset-y-14 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="p-3 border-b border-slate-200 space-y-2.5">
+        <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+          <button id="sbModeFlowBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">Simple Flow</button>
+          <button id="sbModeAllBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">All 58 Screens</button>
+        </div>
+        <div id="sidebarSearchWrap" class="relative hidden">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5"></i>
+          <input id="sidebarSearch" type="text" placeholder="Find any of 58 screens..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D4ED8]" />
+        </div>
+      </div>
+      <div id="sidebarList" class="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-3"></div>
+    </aside>
+    <div id="sidebarOverlay" class="fixed inset-0 top-14 bg-slate-900/30 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Canvas -->
+    <main class="flex-1 overflow-y-auto flex items-start justify-center p-0 sm:p-4 lg:p-5">
+      <div id="phoneContainer" class="flex flex-col items-center w-full">
+        <div class="phone-shell">
+          <div class="h-7 px-5 bg-white flex items-center justify-between text-[11px] font-semibold text-slate-800 shrink-0 select-none border-b border-slate-100">
+            <span>13:12</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full hidden sm:block"></div>
+            <div class="flex items-center gap-1.5 text-slate-700"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></div>
+          </div>
+          <div id="phoneToast" class="toast-bar hidden"></div>
+          <div id="screenRoot" class="flex-1 flex flex-col min-h-0 relative"></div>
+          <div id="sheetRoot" class="hidden"></div>
+        </div>
+        <div id="screenFooterMeta" class="hidden sm:flex items-center gap-2 mt-2.5 text-xs text-slate-500"></div>
+      </div>
+
+      <div id="galleryContainer" class="hidden w-full max-w-7xl mx-auto pb-8"></div>
+      <div id="workflowContainer" class="hidden w-full max-w-5xl mx-auto pb-8"></div>
+    </main>
+  </div>
+
+<script>
+/* ==========================================================================
+   CRYO ERP – LOGISTICS & DELIVERY MANAGEMENT MOBILE APP
+   Complete 58-Screen Interactive Prototype (Sections 5–62)
+   Single Unified Logistics Workspace (No Manager/Driver Split)
+   ========================================================================== */
+
+const SCREEN_CATALOG = [
+  { group: 'Core & Hubs', items: [
+    { id: 'dashboard', num: 5, title: 'Logistics Dashboard' },
+    { id: 'orders-hub', num: 57, title: 'Orders Hub' },
+    { id: 'dispatch-hub', num: 58, title: 'Dispatch Hub' },
+    { id: 'more', num: 59, title: 'More Menu' },
+    { id: 'notifications', num: 60, title: 'Notifications' },
+    { id: 'profile', num: 61, title: 'Profile' }
+  ]},
+  { group: 'Ready Orders & Delivery Planning', items: [
+    { id: 'ready-list', num: 6, title: 'Ready for Delivery List' },
+    { id: 'completed-pro-details', num: 7, title: 'Completed PRO Details' },
+    { id: 'plan-list', num: 8, title: 'Delivery Planning List' },
+    { id: 'create-plan', num: 9, title: 'Create Delivery Plan' },
+    { id: 'plan-details', num: 10, title: 'Delivery Plan Details' },
+    { id: 'edit-plan', num: 11, title: 'Edit Delivery Plan' }
+  ]},
+  { group: 'Vehicles & Courier Masters', items: [
+    { id: 'vehicles-list', num: 12, title: 'Vehicles Master List' },
+    { id: 'add-vehicle', num: 13, title: 'Add Vehicle' },
+    { id: 'vehicle-details', num: 14, title: 'Vehicle Details' },
+    { id: 'edit-vehicle', num: 15, title: 'Edit Vehicle' },
+    { id: 'vehicle-select-sheet', num: 16, title: 'Select Vehicle (Sheet)' },
+    { id: 'providers-list', num: 17, title: 'Courier & Transport List' },
+    { id: 'add-provider', num: 18, title: 'Add Provider' },
+    { id: 'provider-details', num: 19, title: 'Provider Details' },
+    { id: 'edit-provider', num: 20, title: 'Edit Provider' },
+    { id: 'provider-select-sheet', num: 21, title: 'Select Provider (Sheet)' }
+  ]},
+  { group: 'Customer Payments', items: [
+    { id: 'payments-list', num: 22, title: 'Customer Payments List' },
+    { id: 'payment-verify', num: 23, title: 'Payment Verification' },
+    { id: 'record-payment', num: 24, title: 'Record Customer Payment' },
+    { id: 'payment-details', num: 25, title: 'Customer Payment Details' }
+  ]},
+  { group: 'Packing, Challan & Dispatch', items: [
+    { id: 'packing-list', num: 26, title: 'Packing List' },
+    { id: 'prepare-packing', num: 27, title: 'Prepare Packing' },
+    { id: 'packing-details', num: 28, title: 'Packing Details' },
+    { id: 'packing-preview', num: 29, title: 'Packing List Preview' },
+    { id: 'challan-list', num: 30, title: 'Delivery Challans List' },
+    { id: 'create-challan', num: 31, title: 'Create Delivery Challan' },
+    { id: 'challan-preview', num: 32, title: 'Delivery Challan Preview' },
+    { id: 'ready-dispatch', num: 33, title: 'Ready to Dispatch' },
+    { id: 'dispatch-own', num: 34, title: 'Own Vehicle Dispatch' },
+    { id: 'dispatch-courier', num: 35, title: 'Courier / Transport Dispatch' },
+    { id: 'dispatch-confirm', num: 36, title: 'Dispatch Confirmation' },
+    { id: 'dispatched-list', num: 37, title: 'Dispatched Orders List' },
+    { id: 'dispatch-details', num: 38, title: 'Dispatch Details' }
+  ]},
+  { group: 'Tracking, Exceptions & POD', items: [
+    { id: 'tracking-list', num: 39, title: 'Delivery Tracking List' },
+    { id: 'track-own', num: 40, title: 'Own Vehicle Tracking' },
+    { id: 'track-courier', num: 41, title: 'Courier Tracking' },
+    { id: 'update-status', num: 42, title: 'Update Delivery Status' },
+    { id: 'delayed-list', num: 43, title: 'Delayed Deliveries' },
+    { id: 'reschedule', num: 44, title: 'Reschedule Delivery' },
+    { id: 'delivery-failed', num: 45, title: 'Delivery Failed' },
+    { id: 'delivery-confirm', num: 46, title: 'Delivery Confirmation (POD)' },
+    { id: 'delivery-success', num: 47, title: 'Delivery Success' },
+    { id: 'pod-details', num: 48, title: 'Proof of Delivery Details' }
+  ]},
+  { group: 'Expenses, Returns & History', items: [
+    { id: 'expenses-list', num: 49, title: 'Transport Expenses List' },
+    { id: 'add-expense', num: 50, title: 'Add Delivery Expense' },
+    { id: 'expense-details', num: 51, title: 'Delivery Expense Details' },
+    { id: 'record-transport-pay', num: 52, title: 'Record Transport Payment' },
+    { id: 'product-return', num: 53, title: 'Product Return' },
+    { id: 'completed-list', num: 54, title: 'Completed Deliveries List' },
+    { id: 'completed-details', num: 55, title: 'Completed Delivery Details' },
+    { id: 'delivery-history', num: 56, title: 'Delivery History' }
+  ]},
+  { group: 'Common UI States', items: [
+    { id: 'ui-states', num: 62, title: 'Common UI States (17)' }
+  ]}
+];
+
+const USER = {
+  name: 'Praveen Kumar', empId: 'EMP-LG-108', department: 'Logistics & Delivery',
+  email: 'praveen.k@cryoerp.com', phone: '+91 98401 66108'
+};
+
+/* ---------- SHARED REACTIVE STATE (Exact Sample Data Continuity — Section 64) ---------- */
+const state = {
+  viewMode: 'phone',
+  sidebarMode: 'flow',
+  screen: 'dashboard',
+  history: [],
+  activeSheet: null,
+  galleryCategory: 'All',
+  uiStateDemo: 'ready-dispatch',
+
+  selected: {
+    proId: 'PRO-001',
+    delId: 'DEL-001',
+    vehId: 'VEH-01',
+    provId: 'PROV-01'
+  },
+
+  filters: {
+    readyTab: 'All', readySearch: '',
+    planTab: 'All', planSearch: '',
+    packTab: 'All', challanSearch: '',
+    dispatchFilter: 'All', trackTab: 'All', trackSearch: '',
+    vehSearch: '', provSearch: '', payTab: 'All', expFilter: 'All', histSearch: ''
+  },
+
+  planDraft: null,
+
+  // Completed Production Orders from Production Dept (Quality-approved only)
+  readyOrders: [
+    {
+      proId: 'PRO-001', soId: 'SO-001', customer: 'ABC Laboratory', contact: 'Dr. Ramesh Babu', phone: '+91 98402 55110',
+      address: '42 Guindy Industrial Estate, Chennai, Tamil Nadu 600032', destination: 'Chennai, Tamil Nadu',
+      product: 'Deep Freezer', model: 'CRYO-DF80-340L', approvedQty: 2, plannedQty: 2,
+      completionDate: '2026-11-19', expectedDelivery: '2026-11-22',
+      packingNotes: 'Keep upright at all times. Attach IQ/OQ calibration folder.',
+      orderAmount: 150000, receivedAmount: 100000, paymentTerms: 'Collect balance on delivery', status: 'Planned'
+    },
+    {
+      proId: 'PRO-002', soId: 'SO-002', customer: 'Apex Pharma Labs', contact: 'Rajesh Kulkarni', phone: '+91 98201 44512',
+      address: 'Plot 18, Peenya Phase II, Bengaluru, Karnataka 560058', destination: 'Bengaluru, Karnataka',
+      product: 'Laboratory Incubator', model: 'CRYO-INC-200', approvedQty: 3, plannedQty: 0,
+      completionDate: '2026-11-20', expectedDelivery: '2026-11-25',
+      packingNotes: 'Fragile inner toughened glass door — wooden crate recommended.',
+      orderAmount: 285000, receivedAmount: 285000, paymentTerms: 'Fully Paid', status: 'Ready for Delivery'
+    }
+  ],
+
+  // Vehicles Master (Simple — no RC/insurance/fleet bloat)
+  vehicles: [
+    { id: 'VEH-01', regNo: 'TN 01 AB 1234', type: 'Mini Truck', model: 'Tata Ace Gold', capacity: '1.5 Ton', status: 'Assigned', currentDel: 'DEL-001', notes: 'Hydraulic tail-lift available' },
+    { id: 'VEH-02', regNo: 'TN 09 CD 5678', type: 'Delivery Van', model: 'Mahindra Bolero Pickup', capacity: '1.2 Ton', status: 'Available', currentDel: '', notes: 'Local Chennai deliveries' }
+  ],
+
+  // Courier & Transport Providers Master
+  providers: [
+    { id: 'PROV-01', name: 'Sample Road Transport', type: 'Road Transport', contact: 'Suresh Nair', phone: '+91 98409 22110', email: 'bookings@sampleroad.in', trackingUrl: 'https://sampleroad.example/track', address: 'Madhavaram Transport Nagar, Chennai' },
+    { id: 'PROV-02', name: 'BlueLine Lab Cargo', type: 'Cargo Service', contact: 'Meena R', phone: '+91 98408 33112', email: 'dispatch@bluelinecargo.in', trackingUrl: 'https://blueline.example/track', address: 'Guindy, Chennai' }
+  ],
+
+  // Deliveries (Own Vehicle example: DEL-001; Courier example: DEL-002 — no duplicate dispatch of same qty!)
+  deliveries: [
+    {
+      id: 'DEL-001', soId: 'SO-001', proId: 'PRO-001', pkgId: 'PKG-001', dcId: 'DC-001', dspId: 'DSP-001',
+      customer: 'ABC Laboratory', contact: 'Dr. Ramesh Babu', phone: '+91 98402 55110',
+      address: '42 Guindy Industrial Estate, Chennai, Tamil Nadu 600032', destination: 'Chennai, Tamil Nadu',
+      product: 'Deep Freezer', model: 'CRYO-DF80-340L', qty: 2, deliveredQty: 0,
+      plannedDispatch: '2026-11-20', plannedDelivery: '2026-11-22', actualDelivery: '',
+      method: 'Own Vehicle', vehicleId: 'VEH-01', driverName: 'Selvam K', driverPhone: '+91 98407 11220',
+      providerId: '', trackingNo: '',
+      status: 'Ready to Dispatch', // Planned | Packing | Ready to Dispatch | In Transit | Delayed | Delivery Failed | Delivered
+      packingStatus: 'Packed', packages: 2, packageType: 'Wooden Crate', weight: '240 kg',
+      challanStatus: 'Generated',
+      orderAmount: 150000, receivedAmount: 100000, collectOnDelivery: 50000, paymentArrangement: 'Collect on Delivery', paymentVerified: true,
+      estExpense: 3000,
+      expenses: [
+        { type: 'Fuel', amount: 2000, date: '2026-11-20', paidBy: 'Company', status: 'Paid' },
+        { type: 'Toll', amount: 500, date: '2026-11-20', paidBy: 'Driver Cash', status: 'Paid' },
+        { type: 'Loading / Unloading', amount: 500, date: '2026-11-20', paidBy: 'Company', status: 'Pending' }
+      ],
+      reportedLocation: 'Cryo Dispatch Bay, Chennai', lastUpdated: '2026-11-20 12:30 PM',
+      delayReason: '', receiverName: '', podSigned: false,
+      trackingHistory: [
+        { date: '2026-11-20 10:15', status: 'Planned', loc: 'Cryo Dispatch Bay', note: 'Assigned TN 01 AB 1234 (Mini Truck)' },
+        { date: '2026-11-20 11:45', status: 'Packed', loc: 'Packing Bay 2', note: 'PKG-001 completed (2 Wooden Crates) & DC-001 generated' }
+      ]
+    },
+    {
+      id: 'DEL-002', soId: 'SO-003', proId: 'PRO-003', pkgId: 'PKG-002', dcId: 'DC-002', dspId: 'DSP-002',
+      customer: 'NICR Hyderabad', contact: 'Dr. Meera Subramanian', phone: '+91 94440 77231',
+      address: 'Genome Valley, Shameerpet, Hyderabad 500078', destination: 'Hyderabad, Telangana',
+      product: 'Digital Water Bath', model: 'CRYO-WB-18', qty: 4, deliveredQty: 0,
+      plannedDispatch: '2026-11-18', plannedDelivery: '2026-11-20', actualDelivery: '',
+      method: 'Courier / Transport', vehicleId: '', driverName: '', driverPhone: '',
+      providerId: 'PROV-01', trackingNo: 'LR-10001',
+      status: 'Delayed',
+      packingStatus: 'Packed', packages: 4, packageType: 'Carton Box', weight: '64 kg',
+      challanStatus: 'Dispatched',
+      orderAmount: 134520, receivedAmount: 134520, collectOnDelivery: 0, paymentArrangement: 'Fully Paid', paymentVerified: true,
+      estExpense: 3500,
+      expenses: [
+        { type: 'Freight Charge', amount: 3500, date: '2026-11-18', paidBy: 'Company', status: 'Pending' }
+      ],
+      reportedLocation: 'Nellore Highway Hub', lastUpdated: '2026-11-20 09:00 AM',
+      delayReason: 'Highway traffic diversion near Nellore — revised ETA Nov 21', receiverName: '', podSigned: false,
+      trackingHistory: [
+        { date: '2026-11-18 16:00', status: 'Booked', loc: 'Chennai', note: 'Sample Road Transport LR-10001' },
+        { date: '2026-11-19 14:20', status: 'In Transit', loc: 'Nellore Hub', note: 'Slight transit delay reported' }
+      ]
+    },
+    {
+      id: 'DEL-000', soId: 'SO-000', proId: 'PRO-000', pkgId: 'PKG-000', dcId: 'DC-000', dspId: 'DSP-000',
+      customer: 'BioMed Diagnostics', contact: 'Dr. Kavitha Raman', phone: '+91 98402 11890',
+      address: 'Guindy, Chennai, Tamil Nadu', destination: 'Chennai, Tamil Nadu',
+      product: 'BOD Laboratory Incubator', model: 'CRYO-INC-200', qty: 1, deliveredQty: 1,
+      plannedDispatch: '2026-11-15', plannedDelivery: '2026-11-16', actualDelivery: '2026-11-16',
+      method: 'Own Vehicle', vehicleId: 'VEH-02', driverName: 'Kumar M', driverPhone: '+91 98407 44112',
+      providerId: '', trackingNo: '',
+      status: 'Delivered',
+      packingStatus: 'Packed', packages: 1, packageType: 'Wooden Crate', weight: '85 kg',
+      challanStatus: 'Dispatched',
+      orderAmount: 112100, receivedAmount: 112100, collectOnDelivery: 0, paymentArrangement: 'Fully Paid', paymentVerified: true,
+      estExpense: 1800,
+      expenses: [{ type: 'Fuel', amount: 1800, date: '2026-11-16', paidBy: 'Company', status: 'Paid' }],
+      reportedLocation: 'Guindy, Chennai', lastUpdated: '2026-11-16 03:45 PM',
+      delayReason: '', receiverName: 'Dr. Kavitha Raman', podSigned: true,
+      trackingHistory: [
+        { date: '2026-11-16 10:00', status: 'Dispatched', loc: 'Cryo Plant', note: 'TN 09 CD 5678' },
+        { date: '2026-11-16 15:45', status: 'Delivered', loc: 'BioMed Diagnostics', note: 'Signed POD received' }
+      ]
+    }
+  ],
+
+  // Notifications (All 10 logistics notification types per Section 60)
+  notifications: [
+    { id: 'N-1', type: 'New completed Production Order received', title: 'PRO-002 Ready for Delivery', desc: 'Apex Pharma Labs — Laboratory Incubator × 3 units QC Approved', time: '15 mins ago', unread: true, screen: 'completed-pro-details', key: 'proId', val: 'PRO-002' },
+    { id: 'N-2', type: 'Dispatch pending', title: 'DEL-001 Ready to Dispatch', desc: 'ABC Laboratory — Deep Freezer × 2 (PKG-001 & DC-001 complete)', time: '30 mins ago', unread: true, screen: 'dispatch-own', key: 'delId', val: 'DEL-001' },
+    { id: 'N-3', type: 'Delivery delayed', title: 'DEL-002 Delayed in Transit', desc: 'Sample Road Transport (LR-10001) — Highway diversion near Nellore', time: '2 hrs ago', unread: true, screen: 'delayed-list', key: null, val: null },
+    { id: 'N-4', type: 'Payment verification required', title: 'Collect ₹50,000 on Delivery: DEL-001', desc: 'ABC Laboratory — Balance due on delivery per SO-001 terms', time: '3 hrs ago', unread: false, screen: 'payment-verify', key: 'delId', val: 'DEL-001' },
+    { id: 'N-5', type: 'Delivery scheduled today', title: 'Today’s Delivery: DEL-001', desc: 'TN 01 AB 1234 assigned for Chennai, Tamil Nadu', time: 'Today', unread: false, screen: 'plan-details', key: 'delId', val: 'DEL-001' },
+    { id: 'N-6', type: 'Delivery successfully completed', title: 'DEL-000 Delivered & POD Recorded', desc: 'BioMed Diagnostics — SO-000 updated to Delivered', time: 'Nov 16', unread: false, screen: 'completed-details', key: 'delId', val: 'DEL-000' }
+  ]
+};
+
+/* ---------- HELPERS ---------- */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const fmtINR = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const todayStr = () => '2026-11-20';
+const getReady = (id) => state.readyOrders.find((r) => r.proId === id) || state.readyOrders[0];
+const getDel = (id) => state.deliveries.find((d) => d.id === id) || state.deliveries[0];
+const getVeh = (id) => state.vehicles.find((v) => v.id === id) || state.vehicles[0];
+const getProv = (id) => state.providers.find((p) => p.id === id) || state.providers[0];
+const sumExpenses = (d) => (d.expenses || []).reduce((a, e) => a + (Number(e.amount) || 0), 0);
+
+function badgeHTML(status) {
+  const map = {
+    'Ready for Delivery': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Partially Planned': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Planned': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Packing': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Packed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Ready to Dispatch': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'In Transit': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Delayed': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Delivery Failed': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Available': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Assigned': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Paid': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Pending': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Generated': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Dispatched': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Collect on Delivery': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Fully Paid': 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  };
+  return `<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full border ${map[status] || 'bg-slate-100 text-slate-700 border-slate-200'} whitespace-nowrap">${esc(status)}</span>`;
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('phoneToast');
+  if (!el) return;
+  const cls = type === 'error' ? 'bg-rose-600 text-white' : type === 'warning' ? 'bg-amber-600 text-white' : 'bg-[#1E3A8A] text-white';
+  el.className = `toast-bar rounded-xl px-3.5 py-2.5 text-xs font-medium shadow-lg flex items-center gap-2 ${cls}`;
+  el.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 shrink-0"></i><span class="flex-1">${esc(msg)}</span>`;
+  el.classList.remove('hidden');
+  lucide.createIcons({ nodes: [el] });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+function navigate(screenId, opts = {}) {
+  if (opts.key && opts.val) state.selected[opts.key] = opts.val;
+  if (!opts.skipHistory && state.screen !== screenId) {
+    state.history.push(state.screen);
+    if (state.history.length > 25) state.history.shift();
+  }
+  state.activeSheet = null;
+  state.screen = screenId;
+
+  if (screenId === 'create-plan' || screenId === 'edit-plan') {
+    const r = getReady(state.selected.proId);
+    const d = getDel(state.selected.delId);
+    state.planDraft = screenId === 'edit-plan'
+      ? { mode: 'edit', id: d.id, method: d.method, qty: d.qty, vehicleId: d.vehicleId || 'VEH-01', driverName: d.driverName, driverPhone: d.driverPhone, providerId: d.providerId || 'PROV-01', trackingNo: d.trackingNo, estExpense: d.estExpense, dispatchDate: d.plannedDispatch, deliveryDate: d.plannedDelivery, address: d.address, paymentArr: d.paymentArrangement }
+      : { mode: 'create', proId: r.proId, method: 'Own Vehicle', qty: Math.max(1, r.approvedQty - r.plannedQty || r.approvedQty), vehicleId: 'VEH-02', driverName: 'Selvam K', driverPhone: '+91 98407 11220', providerId: 'PROV-01', trackingNo: '', estExpense: 3000, dispatchDate: todayStr(), deliveryDate: r.expectedDelivery, address: r.address, paymentArr: r.paymentTerms };
+  } else if (screenId === 'vehicle-select-sheet') state.activeSheet = { type: 'select-veh' };
+  else if (screenId === 'provider-select-sheet') state.activeSheet = { type: 'select-prov' };
+
+  state.viewMode = 'phone';
+  renderAll();
+}
+
+function goBack(fallback = 'dashboard') {
+  state.activeSheet = null;
+  state.screen = state.history.length ? state.history.pop() : fallback;
+  renderAll();
+}
+
+/* ---------- SHARED CHROME ---------- */
+function renderTopBar(title, opts = {}) {
+  const back = opts.back ? `<button type="button" data-action="go-back" data-fallback="${opts.fallback || 'dashboard'}" class="p-1.5 -ml-1.5 rounded-lg text-slate-700 hover:bg-slate-100"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '';
+  return `<div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 shrink-0"><div class="flex items-center gap-2 min-w-0">${back}<h1 class="text-[15px] font-semibold text-slate-900 truncate">${esc(title)}</h1></div><div class="flex items-center gap-1.5 shrink-0">${opts.right || ''}</div></div>`;
+}
+
+function renderBottomNav(active) {
+  const tabs = [['home', 'Home', 'home', 'dashboard'], ['orders', 'Orders', 'package', 'orders-hub'], ['dispatch', 'Dispatch', 'truck', 'dispatch-hub'], ['tracking', 'Tracking', 'map-pin', 'tracking-list'], ['more', 'More', 'grid', 'more']];
+  return `<nav class="bg-white border-t border-slate-200 px-1 pt-1.5 pb-2 grid grid-cols-5 shrink-0">${tabs.map(([id, lbl, ic, sc]) => `<button type="button" data-nav="${sc}" class="flex flex-col items-center justify-center gap-0.5 py-0.5 rounded-lg ${id === active ? 'text-[#1E3A8A] font-semibold' : 'text-slate-500 hover:text-slate-800'}"><i data-lucide="${ic}" class="w-4.5 h-4.5 ${id === active ? 'stroke-[2.3]' : ''}"></i><span class="text-[10px]">${lbl}</span></button>`).join('')}</nav>`;
+}
+
+function renderStickyAction(html) {
+  return `<div class="bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-2.5 shrink-0">${html}</div>`;
+}
+
+function renderDelStepper(activeStep, nextTip) {
+  const steps = [[1, 'Plan'], [2, 'Pack'], [3, 'Dispatch'], [4, 'Transit'], [5, 'POD']];
+  return `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2"><div class="flex items-center justify-between">${steps.map(([n, lbl], idx) => {
+    const done = n < activeStep, curr = n === activeStep;
+    return `<div class="flex items-center ${idx < steps.length - 1 ? 'flex-1' : ''}"><div class="flex flex-col items-center gap-0.5 shrink-0"><span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center ${done ? 'bg-emerald-600 text-white' : curr ? 'bg-[#1E3A8A] text-white ring-4 ring-blue-100' : 'bg-slate-100 text-slate-400 border border-slate-200'}">${done ? '✓' : n}</span><span class="text-[10px] ${curr ? 'font-bold text-[#1E3A8A]' : done ? 'text-emerald-700 font-medium' : 'text-slate-400'}">${lbl}</span></div>${idx < steps.length - 1 ? `<div class="h-0.5 flex-1 mx-1 -mt-4 ${done ? 'bg-emerald-500' : 'bg-slate-200'}"></div>` : ''}</div>`;
+  }).join('')}</div>${nextTip ? `<div class="bg-blue-50/80 border border-blue-100 rounded-lg px-2.5 py-1.5 text-[11px] text-[#1E3A8A] flex items-center gap-1.5"><i data-lucide="compass" class="w-3.5 h-3.5 shrink-0"></i><span><strong>Next step:</strong> ${esc(nextTip)}</span></div>` : ''}</div>`;
+}
+
+function delStepNum(st) {
+  return ({ 'Planned': 1, 'Packing': 2, 'Ready to Dispatch': 3, 'In Transit': 4, 'Delayed': 4, 'Delivery Failed': 4, 'Delivered': 5 })[st] || 1;
+}
+
+/* ==========================================================================
+   SCREEN RENDERERS (SECTIONS 5–62)
+   ========================================================================== */
+
+// 5. DASHBOARD
+function renderDashboard() {
+  const unread = state.notifications.filter((n) => n.unread).length;
+  const readyCount = state.readyOrders.filter((r) => r.status !== 'Planned').length;
+  const plannedCount = state.deliveries.filter((d) => ['Planned', 'Packing', 'Ready to Dispatch'].includes(d.status)).length;
+  const transitCount = state.deliveries.filter((d) => ['In Transit', 'Delayed'].includes(d.status)).length;
+  const deliveredCount = state.deliveries.filter((d) => d.status === 'Delivered').length;
+
+  return `
+    <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <div><div class="text-[11px] font-medium text-[#1D4ED8] uppercase tracking-wide">Cryo ERP • Logistics Management</div><div class="text-base font-semibold text-slate-900">Hello, ${esc(USER.name.split(' ')[0])}</div></div>
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-nav="notifications" class="relative p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700" aria-label="Notifications"><i data-lucide="bell" class="w-4 h-4"></i>${unread ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center">${unread}</span>` : ''}</button>
+        <button type="button" data-nav="profile" class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold flex items-center justify-center">PK</button>
+      </div>
+    </div>
+
+    <div class="phone-scroll p-3.5 space-y-4">
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" data-nav="ready-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Ready for Delivery</span><i data-lucide="package" class="w-4 h-4 text-[#1D4ED8]"></i></div><div class="text-xl font-bold">${readyCount}</div></button>
+        <button type="button" data-nav="plan-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Planned Deliveries</span><i data-lucide="calendar" class="w-4 h-4 text-amber-600"></i></div><div class="text-xl font-bold">${plannedCount}</div></button>
+        <button type="button" data-nav="tracking-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">In Transit</span><i data-lucide="truck" class="w-4 h-4 text-[#1E3A8A]"></i></div><div class="text-xl font-bold">${transitCount}</div></button>
+        <button type="button" data-nav="completed-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Delivered</span><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i></div><div class="text-xl font-bold">${deliveredCount}</div></button>
+      </div>
+
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Quick Actions</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-nav="ready-list" class="bg-[#1E3A8A] text-white rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="calendar-plus" class="w-4 h-4"></i><span>Plan Delivery</span></button>
+          <button type="button" data-nav="ready-dispatch" class="bg-white border border-slate-200 text-slate-800 rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="truck" class="w-4 h-4 text-[#1E3A8A]"></i><span>Dispatch</span></button>
+          <button type="button" data-nav="tracking-list" class="bg-white border border-slate-200 text-slate-800 rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="map-pin" class="w-4 h-4 text-[#1E3A8A]"></i><span>Track</span></button>
+        </div>
+      </div>
+
+      <!-- Simple Delivery Flow Strip -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+        <div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-800">Delivery Flow (Tap any step)</span><span class="text-[10px] font-medium text-[#1D4ED8]">Step 1 → 5</span></div>
+        <div class="grid grid-cols-5 gap-1 text-center">
+          <button type="button" data-nav="ready-list" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">${state.readyOrders.length}</div><div class="text-[10px] font-medium">1. Ready</div></button>
+          <button type="button" data-nav="packing-list" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">${state.deliveries.length}</div><div class="text-[10px] font-medium">2. Pack</div></button>
+          <button type="button" data-nav="ready-dispatch" class="p-1.5 rounded-lg bg-amber-50"><div class="text-xs font-bold text-amber-700">${plannedCount}</div><div class="text-[10px] font-medium text-amber-800">3. Disp</div></button>
+          <button type="button" data-nav="tracking-list" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">${transitCount}</div><div class="text-[10px] font-medium">4. Track</div></button>
+          <button type="button" data-nav="completed-list" class="p-1.5 rounded-lg bg-emerald-50"><div class="text-xs font-bold text-emerald-700">${deliveredCount}</div><div class="text-[10px] font-medium text-emerald-800">5. POD</div></button>
+        </div>
+      </div>
+
+      <!-- Today's Deliveries -->
+      <div>
+        <div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-slate-500 uppercase">Today's Deliveries</span><button type="button" data-nav="plan-list" class="text-xs font-medium text-[#1D4ED8]">View All</button></div>
+        ${state.deliveries.filter((d) => d.status !== 'Delivered').map((d) => `
+          <button type="button" data-open="plan-details" data-key="delId" data-val="${d.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 mb-2 space-y-1 hover:border-[#1D4ED8]">
+            <div class="flex justify-between items-center"><span class="text-xs font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.method)}</span>${badgeHTML(d.status)}</div>
+            <div class="text-sm font-semibold text-slate-900">${esc(d.customer)} — ${esc(d.product)} (${d.qty})</div>
+            <div class="text-[11px] text-slate-500">${esc(d.destination)} • Planned: ${esc(d.plannedDelivery)}</div>
+          </button>`).join('')}
+      </div>
+
+      <!-- Pending Actions -->
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button type="button" data-nav="ready-dispatch" class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-left"><div class="font-semibold text-amber-800">Dispatch Pending</div><div class="text-[11px] text-amber-700">DEL-001 ready</div></button>
+        <button type="button" data-nav="delayed-list" class="bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-left"><div class="font-semibold text-rose-800">Delayed Delivery</div><div class="text-[11px] text-rose-700">DEL-002 (LR-10001)</div></button>
+      </div>
+    </div>
+    ${renderBottomNav('home')}
+  `;
+}
+
+// 6. READY FOR DELIVERY LIST
+function renderReadyList() {
+  return `
+    ${renderTopBar('Ready for Delivery', { back: true, fallback: 'orders-hub' })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.readyOrders.map((r) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start"><div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(r.proId)} • ${esc(r.soId)}</div><div class="text-sm font-semibold text-slate-900">${esc(r.customer)}</div><div class="text-xs text-slate-600">${esc(r.product)} • QC Approved: <strong>${r.approvedQty} units</strong></div></div>${badgeHTML(r.status)}</div>
+          <div class="text-[11px] text-slate-500">Completed: ${esc(r.completionDate)} • Due: ${esc(r.expectedDelivery)}</div>
+          <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+            <button type="button" data-open="completed-pro-details" data-key="proId" data-val="${r.proId}" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">View Details</button>
+            <button type="button" data-open="create-plan" data-key="proId" data-val="${r.proId}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Plan Delivery</button>
+          </div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('orders')}
+  `;
+}
+
+// 7. COMPLETED PRODUCTION ORDER DETAILS
+function renderCompletedPRODetails() {
+  const r = getReady(state.selected.proId);
+  const out = r.orderAmount - r.receivedAmount;
+  return `
+    ${renderTopBar(r.proId, { back: true, fallback: 'ready-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
+        <div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(r.product)} (${esc(r.model)})</strong>${badgeHTML(r.status)}</div>
+        <div class="text-slate-600">Sales Order: <strong>${esc(r.soId)}</strong> • QC Approved: <strong>${r.approvedQty} units</strong></div>
+        <div class="text-slate-500">Completed: ${esc(r.completionDate)} • Expected Delivery: ${esc(r.expectedDelivery)}</div>
+        <div class="bg-blue-50/70 rounded-lg p-2 text-[#1E3A8A]"><strong>Handling:</strong> ${esc(r.packingNotes)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1">
+        <div class="font-semibold text-slate-500 uppercase">Customer & Delivery Address</div>
+        <div class="font-semibold text-slate-900">${esc(r.customer)} (${esc(r.contact)})</div>
+        <div class="text-slate-600">${esc(r.phone)}</div>
+        <div class="text-slate-500">${esc(r.address)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1">
+        <div class="font-semibold text-slate-500 uppercase">Payment Summary (Shared with Sales)</div>
+        <div class="flex justify-between"><span>Total Order</span><strong>${fmtINR(r.orderAmount)}</strong></div>
+        <div class="flex justify-between"><span>Received</span><strong class="text-emerald-700">${fmtINR(r.receivedAmount)}</strong></div>
+        <div class="flex justify-between"><span>Outstanding</span><strong class="${out > 0 ? 'text-amber-700' : 'text-emerald-700'}">${fmtINR(out)}</strong></div>
+        <div class="text-[11px] text-[#1D4ED8] pt-1">Terms: ${esc(r.paymentTerms)}</div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-open="create-plan" data-key="proId" data-val="${r.proId}" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Create Delivery Plan →</button>`)}
+  `;
+}
+
+// 8. DELIVERY PLANNING LIST
+function renderPlanList() {
+  return `
+    ${renderTopBar('Delivery Planning', { back: true, fallback: 'orders-hub' })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.deliveries.map((d) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start"><div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.soId)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div><div class="text-xs text-slate-600">${esc(d.product)} × ${d.qty} • ${esc(d.destination)}</div></div>${badgeHTML(d.status)}</div>
+          <div class="text-[11px] text-slate-500">${esc(d.method)} • Planned: ${esc(d.plannedDelivery)}</div>
+          <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+            <button type="button" data-open="plan-details" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">View Details</button>
+            <button type="button" data-open="prepare-packing" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Packing</button>
+          </div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('orders')}
+  `;
+}
+
+// 9 & 11. CREATE / EDIT DELIVERY PLAN (Conditional Own Vehicle / Courier fields)
+function renderPlanForm(isEdit = false) {
+  if (!state.planDraft) navigate(isEdit ? 'edit-plan' : 'create-plan', { skipHistory: true });
+  const d = state.planDraft;
+  const r = getReady(d.proId || state.selected.proId);
+  const veh = getVeh(d.vehicleId);
+  const prov = getProv(d.providerId);
+  return `
+    ${renderTopBar(isEdit ? `Edit ${d.id}` : 'Create Delivery Plan', { back: true, fallback: 'plan-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs space-y-0.5">
+        <div class="font-semibold text-[#1D4ED8]">Auto-loaded: ${esc(r.soId)} / ${esc(r.proId)}</div>
+        <div class="font-semibold text-slate-900">${esc(r.customer)} — ${esc(r.product)}</div>
+        <div class="text-slate-600">Outstanding: ${fmtINR(r.orderAmount - r.receivedAmount)} (${esc(r.paymentTerms)})</div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-medium mb-1">Delivery Qty (Max ${r.approvedQty})</label><input id="plQty" type="number" min="1" max="${r.approvedQty}" value="${d.qty}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold" /></div>
+          <div><label class="block font-medium mb-1">Planned Delivery</label><input id="plDate" type="date" value="${esc(d.deliveryDate)}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        </div>
+        <div><label class="block font-medium mb-1">Delivery Address</label><textarea id="plAddr" rows="2" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">${esc(d.address)}</textarea></div>
+      </div>
+
+      <!-- Conditional Delivery Method -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs">
+        <div class="font-semibold text-[#1E3A8A] uppercase">Delivery Method</div>
+        <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-0.5">
+          ${['Own Vehicle', 'Courier / Transport'].map((m) => `<button type="button" data-action="plan-method" data-val="${m}" class="py-1.5 rounded-md font-semibold ${d.method === m ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}">${m}</button>`).join('')}
+        </div>
+        ${d.method === 'Own Vehicle' ? `
+          <div class="space-y-2">
+            <div class="flex justify-between items-center"><span class="font-medium">Company Vehicle</span><button type="button" data-action="open-sheet" data-sheet="select-veh" class="text-[#1D4ED8] font-semibold">Change / + Add</button></div>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold">${esc(veh.regNo)} • ${esc(veh.type)} (${esc(veh.status)})</div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="block text-[11px] mb-1">Driver Name</label><input id="plDrvName" type="text" value="${esc(d.driverName)}" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+              <div><label class="block text-[11px] mb-1">Driver Phone</label><input id="plDrvPhone" type="tel" value="${esc(d.driverPhone)}" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+            </div>
+            <div><label class="block text-[11px] mb-1">Estimated Expense (₹)</label><input id="plExp" type="number" value="${d.estExpense}" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+          </div>
+        ` : `
+          <div class="space-y-2">
+            <div class="flex justify-between items-center"><span class="font-medium">Courier / Transport Provider</span><button type="button" data-action="open-sheet" data-sheet="select-prov" class="text-[#1D4ED8] font-semibold">Change / + Add</button></div>
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold">${esc(prov.name)} (${esc(prov.type)})</div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="block text-[11px] mb-1">Tracking / LR No.</label><input id="plTrack" type="text" value="${esc(d.trackingNo)}" placeholder="Optional at plan" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+              <div><label class="block text-[11px] mb-1">Est. Freight (₹)</label><input id="plExp" type="number" value="${d.estExpense || 3500}" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+            </div>
+          </div>
+        `}
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-plan" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Save Delivery Plan'}</button>`)}
+  `;
+}
+
+// 10. DELIVERY PLAN DETAILS
+function renderPlanDetails() {
+  const d = getDel(state.selected.delId);
+  const nextBtn = d.status === 'Planned' ? ['Next: Prepare Packing →', 'prepare-packing']
+    : d.status === 'Packing' ? ['Next: Generate Delivery Challan →', 'create-challan']
+    : d.status === 'Ready to Dispatch' ? ['Next: Confirm Dispatch →', d.method === 'Own Vehicle' ? 'dispatch-own' : 'dispatch-courier']
+    : d.status === 'Delivered' ? ['View Proof of Delivery →', 'pod-details']
+    : ['Next: Track / Confirm Delivery →', d.method === 'Own Vehicle' ? 'track-own' : 'track-courier'];
+
+  return `
+    ${renderTopBar(d.id, { back: true, fallback: 'plan-list', right: d.status !== 'Delivered' ? `<button type="button" data-nav="edit-plan" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` : '' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderDelStepper(delStepNum(d.status), nextBtn[0].replace('Next: ', '').replace(' →', ''))}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
+        <div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(d.customer)}</strong>${badgeHTML(d.status)}</div>
+        <div class="text-slate-600">${esc(d.product)} × ${d.qty} units • Ref ${esc(d.soId)} / ${esc(d.proId)}</div>
+        <div class="text-slate-500">${esc(d.address)}</div>
+        <div class="pt-1 border-t border-slate-100 flex justify-between"><span>Method: <strong>${esc(d.method)}</strong></span><span>Est. Exp: <strong>${fmtINR(d.estExpense)}</strong></span></div>
+        <div class="flex justify-between"><span>Payment: <strong>${esc(d.paymentArrangement)}</strong></span><span>Balance: <strong class="text-amber-700">${fmtINR(d.orderAmount - d.receivedAmount)}</strong></span></div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">
+        <button type="button" data-open="payment-verify" data-key="delId" data-val="${d.id}" class="w-full px-3.5 py-2.5 flex justify-between"><span>Payment Verification</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>
+        <button type="button" data-open="packing-details" data-key="delId" data-val="${d.id}" class="w-full px-3.5 py-2.5 flex justify-between"><span>Packing Details (${esc(d.pkgId)})</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>
+        <button type="button" data-open="challan-preview" data-key="delId" data-val="${d.id}" class="w-full px-3.5 py-2.5 flex justify-between"><span>Delivery Challan (${esc(d.dcId)})</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>
+        <button type="button" data-open="expense-details" data-key="delId" data-val="${d.id}" class="w-full px-3.5 py-2.5 flex justify-between"><span>Transport Expenses (${fmtINR(sumExpenses(d))})</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-open="${nextBtn[1]}" data-key="delId" data-val="${d.id}" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${nextBtn[0]}</button>`)}
+  `;
+}
+
+// 12–15. VEHICLES MASTER
+function renderVehiclesList() {
+  return `${renderTopBar('Vehicles', { back: true, fallback: 'more', right: `<button type="button" data-nav="add-vehicle" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>` })}<div class="phone-scroll p-3.5 space-y-2.5">${state.vehicles.map((v) => `<button type="button" data-open="vehicle-details" data-key="vehId" data-val="${v.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center hover:border-[#1D4ED8]"><div><div class="text-sm font-semibold text-slate-900">${esc(v.regNo)}</div><div class="text-xs text-slate-500">${esc(v.type)} • ${esc(v.model)} (${esc(v.capacity)})</div></div>${badgeHTML(v.status)}</button>`).join('')}</div>${renderBottomNav('more')}`;
+}
+function renderVehicleForm(isEdit = false) {
+  const v = isEdit ? getVeh(state.selected.vehId) : { regNo: '', type: 'Mini Truck', model: '', capacity: '', status: 'Available', notes: '' };
+  return `${renderTopBar(isEdit ? 'Edit Vehicle' : 'Add Vehicle', { back: true, fallback: 'vehicles-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div><label class="block font-medium mb-1">Registration Number *</label><input id="vReg" type="text" value="${esc(v.regNo)}" placeholder="TN 01 XY 9900" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Vehicle Type *</label><select id="vType" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${['Mini Truck', 'Delivery Van', 'Truck', 'Other'].map((t) => `<option ${v.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Model</label><input id="vModel" type="text" value="${esc(v.model)}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Capacity</label><input id="vCap" type="text" value="${esc(v.capacity)}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div><div><label class="block font-medium mb-1">Notes</label><input id="vNotes" type="text" value="${esc(v.notes)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="save-veh" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Save Vehicle'}</button>`)}`;
+}
+function renderVehicleDetails() {
+  const v = getVeh(state.selected.vehId);
+  return `${renderTopBar(v.regNo, { back: true, fallback: 'vehicles-list', right: `<button type="button" data-nav="edit-vehicle" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="flex justify-between"><strong class="text-base">${esc(v.regNo)}</strong>${badgeHTML(v.status)}</div><div class="text-slate-600">${esc(v.type)} • ${esc(v.model)} • Capacity: ${esc(v.capacity)}</div>${v.currentDel ? `<div class="text-[#1D4ED8] font-medium">Current Delivery: ${esc(v.currentDel)}</div>` : ''}<div class="text-slate-500">${esc(v.notes)}</div></div></div>${renderStickyAction(`<button type="button" data-action="toggle-veh-avail" data-id="${v.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Toggle Available / Maintenance</button>`)}`;
+}
+
+// 17–20. COURIER & TRANSPORT PROVIDERS MASTER
+function renderProvidersList() {
+  return `${renderTopBar('Courier & Transport', { back: true, fallback: 'more', right: `<button type="button" data-nav="add-provider" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>` })}<div class="phone-scroll p-3.5 space-y-2.5">${state.providers.map((p) => `<button type="button" data-open="provider-details" data-key="provId" data-val="${p.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center hover:border-[#1D4ED8]"><div><div class="text-sm font-semibold text-slate-900">${esc(p.name)}</div><div class="text-xs text-slate-500">${esc(p.type)} • ${esc(p.phone)}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div>${renderBottomNav('more')}`;
+}
+function renderProviderForm(isEdit = false) {
+  const p = isEdit ? getProv(state.selected.provId) : { name: '', type: 'Road Transport', contact: '', phone: '', email: '', trackingUrl: '', address: '' };
+  return `${renderTopBar(isEdit ? 'Edit Provider' : 'Add Provider', { back: true, fallback: 'providers-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Company Name *</label><input id="prName" type="text" value="${esc(p.name)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Provider Type</label><select id="prType" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${['Courier Service', 'Road Transport', 'Cargo Service', 'Other'].map((t) => `<option ${p.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="block font-medium mb-1">Phone *</label><input id="prPhone" type="tel" value="${esc(p.phone)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Tracking Website (Optional)</label><input id="prUrl" type="url" value="${esc(p.trackingUrl)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="save-prov" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Save Provider'}</button>`)}`;
+}
+function renderProviderDetails() {
+  const p = getProv(state.selected.provId);
+  return `${renderTopBar('Provider Details', { back: true, fallback: 'providers-list', right: `<button type="button" data-nav="edit-provider" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="text-base font-semibold">${esc(p.name)}</div><div class="text-[#1D4ED8] font-medium">${esc(p.type)}</div><div class="text-slate-600">${esc(p.contact)} • ${esc(p.phone)}</div><div class="text-slate-500">${esc(p.address)}</div><div class="grid grid-cols-2 gap-2 pt-2"><button type="button" data-action="call" data-name="${esc(p.name)}" data-phone="${esc(p.phone)}" class="py-2 rounded-lg bg-slate-100 font-medium">Call Provider</button><button type="button" data-action="toast" data-msg="Opened ${esc(p.name)} tracking portal" class="py-2 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">Tracking Site</button></div></div></div>`;
+}
+
+// 22–25. CUSTOMER PAYMENTS (Shared with Sales)
+function renderPaymentsList() {
+  const cod = state.deliveries.reduce((a, d) => a + d.collectOnDelivery, 0);
+  const rec = state.deliveries.reduce((a, d) => a + d.receivedAmount, 0);
+  return `${renderTopBar('Customer Payments', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-3"><div class="grid grid-cols-3 gap-2 text-center text-xs"><div class="bg-slate-50 border border-slate-200 rounded-xl p-2"><div class="text-[10px] text-slate-500">Before Disp</div><strong>₹0</strong></div><div class="bg-amber-50 border border-amber-200 rounded-xl p-2"><div class="text-[10px] text-amber-700">Collect COD</div><strong class="text-amber-800">${fmtINR(cod)}</strong></div><div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2"><div class="text-[10px] text-emerald-700">Collected</div><strong class="text-emerald-800">${fmtINR(rec)}</strong></div></div>${state.deliveries.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.soId)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div></div>${badgeHTML(d.orderAmount <= d.receivedAmount ? 'Paid' : d.paymentArrangement)}</div><div class="flex justify-between text-slate-600"><span>Order: ${fmtINR(d.orderAmount)}</span><span>Balance: <strong class="text-amber-700">${fmtINR(d.orderAmount - d.receivedAmount)}</strong></span></div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="payment-details" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">Details</button><button type="button" data-open="record-payment" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Record Payment</button></div></div>`).join('')}</div>${renderBottomNav('more')}`;
+}
+function renderPaymentVerify() {
+  const d = getDel(state.selected.delId);
+  const out = d.orderAmount - d.receivedAmount;
+  return `${renderTopBar('Payment Verification', { back: true, fallback: 'plan-details' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(d.customer)}</strong>${badgeHTML(d.paymentArrangement)}</div><div class="flex justify-between"><span>Sales Order (${esc(d.soId)})</span><strong>${fmtINR(d.orderAmount)}</strong></div><div class="flex justify-between"><span>Already Received</span><strong class="text-emerald-700">${fmtINR(d.receivedAmount)}</strong></div><div class="flex justify-between"><span>Collect on Delivery</span><strong class="text-amber-700">${fmtINR(out)}</strong></div><div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-emerald-800">Agreed Sales Order terms allow dispatch with ₹${out.toLocaleString('en-IN')} collected on delivery.</div></div></div>${renderStickyAction(`<button type="button" data-open="record-payment" data-key="delId" data-val="${d.id}" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Record Pay</button><button type="button" data-action="verify-pay" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirm Verification</button>`)}`;
+}
+function renderRecordPayment() {
+  const d = getDel(state.selected.delId);
+  const out = Math.max(0, d.orderAmount - d.receivedAmount);
+  return `${renderTopBar('Record Customer Payment', { back: true, fallback: 'payments-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><div class="font-semibold text-[#1D4ED8]">${esc(d.customer)} • ${esc(d.soId)} / ${esc(d.id)}</div><div>Outstanding Balance: <strong>${fmtINR(out)}</strong></div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div><label class="block font-medium mb-1">Received Amount (₹) *</label><input id="cpAmt" type="number" max="${out}" value="${out}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold" /></div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Method</label><select id="cpMethod" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>UPI</option><option>Bank Transfer</option><option>Cash</option><option>Cheque</option></select></div><div><label class="block font-medium mb-1">Date</label><input id="cpDate" type="date" value="${todayStr()}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div><div><label class="block font-medium mb-1">Transaction Reference</label><input id="cpRef" type="text" placeholder="UTR / UPI Ref" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="save-cust-pay" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Payment</button>`)}`;
+}
+function renderPaymentDetails() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Customer Payment Details', { back: true, fallback: 'payments-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(d.customer)}</strong>${badgeHTML(d.orderAmount <= d.receivedAmount ? 'Paid' : 'Collect on Delivery')}</div><div class="grid grid-cols-3 gap-2 text-center pt-1"><div class="bg-slate-50 rounded-lg p-2"><span class="text-[10px] text-slate-400 block">Order</span><strong>${fmtINR(d.orderAmount)}</strong></div><div class="bg-emerald-50 rounded-lg p-2"><span class="text-[10px] text-emerald-700 block">Received</span><strong>${fmtINR(d.receivedAmount)}</strong></div><div class="bg-amber-50 rounded-lg p-2"><span class="text-[10px] text-amber-700 block">Balance</span><strong>${fmtINR(Math.max(0, d.orderAmount - d.receivedAmount))}</strong></div></div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Downloaded payment receipt PDF" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Receipt PDF</button><button type="button" data-open="record-payment" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Record Additional Payment</button>`)}`;
+}
+
+// 26–32. PACKING & DELIVERY CHALLAN
+function renderPackingList() {
+  return `${renderTopBar('Packing', { back: true, fallback: 'dispatch-hub' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.deliveries.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.pkgId)} • ${esc(d.id)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)} — ${esc(d.product)} (${d.qty})</div></div>${badgeHTML(d.packingStatus)}</div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="packing-details" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">View Packing</button><button type="button" data-open="prepare-packing" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Prepare Packing</button></div></div>`).join('')}</div>${renderBottomNav('dispatch')}`;
+}
+function renderPreparePacking() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Prepare Packing', { back: true, fallback: 'packing-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong class="text-[#1D4ED8]">${esc(d.id)} • ${esc(d.customer)}</strong><div>${esc(d.product)} — Qty to Pack: <strong>${d.qty} units</strong></div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Packages</label><input id="pkCount" type="number" min="1" value="${d.packages}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Package Type</label><select id="pkType" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Wooden Crate</option><option>Carton Box</option><option>Pallet</option><option>Other</option></select></div></div><div><label class="block font-medium mb-1">Weight (Optional)</label><input id="pkWeight" type="text" value="${esc(d.weight)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div class="pt-1 space-y-1.5"><div class="font-semibold text-slate-500 uppercase">Packing Checklist</div>${['Product quantity verified', 'Product condition verified', 'Accessories & IQ/OQ folder included', 'Protective packing completed', 'Package labelled'].map((c) => `<label class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-[#1E3A8A]" /><span>${c}</span></label>`).join('')}</div></div></div>${renderStickyAction(`<button type="button" data-action="confirm-pack" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Confirm Packing</button>`)}`;
+}
+function renderPackingDetails() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar(d.pkgId, { back: true, fallback: 'packing-list' })}<div class="phone-scroll p-3.5 space-y-3">${renderDelStepper(2, 'Packing verified! Preview Packing List or generate Delivery Challan.')}<div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="flex justify-between"><strong class="text-sm">${esc(d.customer)}</strong>${badgeHTML(d.packingStatus)}</div><div>${esc(d.product)} × ${d.qty} units • ${d.packages} ${esc(d.packageType)} (${esc(d.weight)})</div></div></div>${renderStickyAction(`<button type="button" data-open="packing-preview" data-key="delId" data-val="${d.id}" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Packing List</button><button type="button" data-open="create-challan" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Delivery Challan →</button>`)}`;
+}
+function renderPackingPreview() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Packing List Preview', { back: true, fallback: 'packing-details' })}<div class="phone-scroll p-3.5"><div class="bg-white border border-slate-300 rounded-xl p-4 text-xs space-y-3"><div class="flex justify-between border-b pb-2"><div><div class="font-bold text-[#1E3A8A] text-sm">PACKING LIST</div><div class="text-[10px] text-slate-500">Cryo Enterprise Equipment Pvt Ltd</div></div><div class="text-right font-bold">${esc(d.pkgId)}<div class="text-[10px] font-normal text-slate-500">${esc(d.id)} / ${esc(d.soId)}</div></div></div><div class="bg-slate-50 rounded-lg p-2.5"><strong>${esc(d.customer)}</strong><div class="text-[11px] text-slate-500">${esc(d.address)}</div></div><div class="flex justify-between py-1.5 border-y"><span>${esc(d.product)} (${esc(d.model)})</span><strong>${d.qty} units • ${d.packages} ${esc(d.packageType)}</strong></div><div class="text-[11px] text-slate-600">Handling: Keep upright. Attach IQ/OQ calibration certificates.</div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Downloaded ${d.pkgId}.pdf" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Download PDF</button>`)}`;
+}
+function renderChallanList() {
+  return `${renderTopBar('Delivery Challans', { back: true, fallback: 'dispatch-hub' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.deliveries.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.dcId)} • ${esc(d.id)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div><div class="text-slate-500">${esc(d.product)} × ${d.qty}</div></div>${badgeHTML(d.challanStatus)}</div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="challan-preview" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-medium">View Challan</button><button type="button" data-action="toast" data-msg="Downloaded ${d.dcId}.pdf" class="py-1.5 rounded-lg bg-slate-100 font-medium">Download PDF</button></div></div>`).join('')}</div>${renderBottomNav('dispatch')}`;
+}
+function renderCreateChallan() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Create Delivery Challan', { back: true, fallback: 'challan-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong class="text-[#1D4ED8]">Auto-loaded: ${esc(d.soId)} • ${esc(d.id)}</strong><div>${esc(d.customer)} — ${esc(d.product)} × ${d.qty} (${d.packages} ${esc(d.packageType)})</div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Challan Date</label><input type="date" value="${todayStr()}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Tax Invoice / E-Way Bill Ref (Optional)</label><input type="text" placeholder="INV-2026-011 / EWB..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-open="challan-preview" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save & Preview Challan</button>`)}`;
+}
+function renderChallanPreview() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar(`Challan ${d.dcId}`, { back: true, fallback: 'challan-list' })}<div class="phone-scroll p-3.5"><div class="bg-white border border-slate-300 rounded-xl p-4 text-xs space-y-3"><div class="flex justify-between border-b pb-2"><div><div class="font-bold text-[#1E3A8A] text-sm">DELIVERY CHALLAN</div><div class="text-[10px] text-slate-500">Cryo Enterprise Equipment Pvt Ltd • Chennai</div></div><div class="text-right font-bold">${esc(d.dcId)}<div class="text-[10px] font-normal text-slate-500">${todayStr()}</div></div></div><div class="bg-slate-50 rounded-lg p-2.5"><strong>${esc(d.customer)}</strong><div class="text-[11px] text-slate-500">${esc(d.address)}</div></div><div class="flex justify-between py-1.5 border-y"><span>${esc(d.product)} (${esc(d.model)})</span><strong>Qty: ${d.qty} • ${d.packages} ${esc(d.packageType)}</strong></div><div class="grid grid-cols-2 gap-3 pt-4 text-[10px] text-slate-400 text-center"><div class="border-t pt-1">Authorized Signatory</div><div class="border-t pt-1">Customer Acknowledgement</div></div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Downloaded ${d.dcId}.pdf" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">PDF</button><button type="button" data-open="${d.method === 'Own Vehicle' ? 'dispatch-own' : 'dispatch-courier'}" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Proceed to Dispatch →</button>`)}`;
+}
+
+// 33–38. DISPATCH SCREENS
+function renderReadyDispatch() {
+  const list = state.deliveries.filter((d) => ['Planned', 'Packing', 'Ready to Dispatch'].includes(d.status));
+  return `${renderTopBar('Ready to Dispatch', { back: true, fallback: 'dispatch-hub' })}<div class="phone-scroll p-3.5 space-y-2.5">${list.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.method)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div><div class="text-slate-600">${esc(d.product)} × ${d.qty} • ${d.packages} ${esc(d.packageType)}</div></div>${badgeHTML(d.paymentArrangement)}</div><button type="button" data-open="${d.method === 'Own Vehicle' ? 'dispatch-own' : 'dispatch-courier'}" data-key="delId" data-val="${d.id}" class="w-full py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">Confirm Dispatch →</button></div>`).join('')}</div>${renderBottomNav('dispatch')}`;
+}
+function renderDispatchOwn() {
+  const d = getDel(state.selected.delId);
+  const v = getVeh(d.vehicleId);
+  return `${renderTopBar('Own Vehicle Dispatch', { back: true, fallback: 'ready-dispatch' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong class="text-[#1D4ED8]">${esc(d.id)} • ${esc(d.dcId)} • ${esc(d.customer)}</strong><div>${esc(d.product)} × ${d.qty} • ${esc(d.destination)}</div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Company Vehicle</label><div class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold">${esc(v.regNo)} (${esc(v.type)})</div></div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Driver Name</label><input type="text" value="${esc(d.driverName || 'Selvam K')}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Driver Phone</label><input type="tel" value="${esc(d.driverPhone || '+91 98407 11220')}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Dispatch Date</label><input type="date" value="${todayStr()}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Departure Time</label><input type="time" value="14:00" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div></div>${renderStickyAction(`<button type="button" data-open="dispatch-confirm" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Review Dispatch</button>`)}`;
+}
+function renderDispatchCourier() {
+  const d = getDel('DEL-002');
+  const p = getProv(d.providerId);
+  return `${renderTopBar('Courier / Transport Dispatch', { back: true, fallback: 'ready-dispatch' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong class="text-[#1D4ED8]">${esc(d.id)} • ${esc(d.customer)}</strong><div>${esc(d.product)} × ${d.qty} • ${esc(d.destination)}</div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Provider</label><div class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold">${esc(p.name)}</div></div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Tracking / LR No.</label><input type="text" value="${esc(d.trackingNo || 'LR-10001')}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold" /></div><div><label class="block font-medium mb-1">Freight Charge (₹)</label><input type="number" value="3500" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Paid By</label><select class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Company</option><option>Customer</option></select></div><div><label class="block font-medium mb-1">Charge Status</label><select class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Pending</option><option>Paid</option><option>Payable at Destination</option></select></div></div></div></div>${renderStickyAction(`<button type="button" data-open="dispatch-confirm" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Review Dispatch</button>`)}`;
+}
+function renderDispatchConfirm() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Dispatch Confirmation', { back: true, fallback: 'ready-dispatch' })}<div class="phone-scroll p-3.5 space-y-3">${renderDelStepper(3, 'Confirming marks this order In Transit and updates vehicle availability.')}<div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="font-semibold text-sm text-slate-900">${esc(d.id)} • ${esc(d.customer)}</div><div>${esc(d.product)} × ${d.qty} • ${esc(d.dcId)} • ${esc(d.method)}</div><div>Payment: <strong>${esc(d.paymentArrangement)}</strong></div><div class="pt-2 space-y-1 border-t">${['Products packed & verified', 'Delivery Challan completed', 'Payment terms satisfied', 'Transport details confirmed'].map((c) => `<div class="flex items-center gap-1.5 text-emerald-700"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i><span>${c}</span></div>`).join('')}</div></div></div>${renderStickyAction(d.status === 'In Transit' || d.status === 'Delivered' ? `<button type="button" disabled class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-semibold">Already Dispatched</button>` : `<button type="button" data-action="confirm-dispatch" data-id="${d.id}" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirm Dispatch</button>`)}`;
+}
+function renderDispatchedList() {
+  return `${renderTopBar('Dispatched Orders', { back: true, fallback: 'dispatch-hub' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.deliveries.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.dspId)} • ${esc(d.id)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div><div class="text-slate-500">${esc(d.method)} • ${esc(d.trackingNo || getVeh(d.vehicleId).regNo)}</div></div>${badgeHTML(d.status)}</div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="dispatch-details" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">View Details</button><button type="button" data-open="${d.method === 'Own Vehicle' ? 'track-own' : 'track-courier'}" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Track</button></div></div>`).join('')}</div>${renderBottomNav('dispatch')}`;
+}
+function renderDispatchDetails() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar(`Dispatch ${d.dspId}`, { back: true, fallback: 'dispatched-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="flex justify-between"><strong class="text-sm">${esc(d.customer)}</strong>${badgeHTML(d.status)}</div><div>${esc(d.product)} × ${d.qty} • ${esc(d.address)}</div><div>Method: <strong>${esc(d.method)}</strong> • ${esc(d.trackingNo || getVeh(d.vehicleId).regNo)}</div><div>Transport Exp: <strong>${fmtINR(sumExpenses(d))}</strong></div></div></div>${renderStickyAction(`<button type="button" data-open="update-status" data-key="delId" data-val="${d.id}" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Update Status</button><button type="button" data-open="${d.method === 'Own Vehicle' ? 'track-own' : 'track-courier'}" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Track Delivery</button>`)}`;
+}
+
+// 39–48. TRACKING, EXCEPTIONS & PROOF OF DELIVERY
+function renderTrackingList() {
+  return `${renderTopBar('Tracking')}<div class="phone-scroll p-3.5 space-y-2.5">${state.deliveries.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.trackingNo || getVeh(d.vehicleId).regNo)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div><div class="text-slate-500">${esc(d.destination)} • Updated ${esc(d.lastUpdated)}</div></div>${badgeHTML(d.status)}</div><button type="button" data-open="${d.method === 'Own Vehicle' ? 'track-own' : 'track-courier'}" data-key="delId" data-val="${d.id}" class="w-full py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">View Tracking</button></div>`).join('')}</div>${renderBottomNav('tracking')}`;
+}
+function renderTrackOwn() {
+  const d = getDel('DEL-001');
+  const v = getVeh(d.vehicleId);
+  return `${renderTopBar(`Track ${d.id}`, { back: true, fallback: 'tracking-list' })}<div class="phone-scroll p-3.5 space-y-3">${renderDelStepper(4, 'Log manual status updates or confirm customer delivery (POD).')}<div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="flex justify-between"><strong class="text-sm">${esc(v.regNo)} (${esc(v.type)})</strong>${badgeHTML(d.status)}</div><div>Driver: <strong>${esc(d.driverName)}</strong> (${esc(d.driverPhone)})</div><div class="bg-slate-50 rounded-lg p-2"><strong>Latest Reported Location:</strong> ${esc(d.reportedLocation)}<div class="text-[10px] text-slate-400">Manual status update • ${esc(d.lastUpdated)}</div></div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-action="call" data-name="${esc(d.driverName)}" data-phone="${esc(d.driverPhone)}" class="py-1.5 rounded-lg bg-slate-100 font-medium">Call Driver</button><button type="button" data-open="update-status" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-medium">Update Status</button></div></div></div>${renderStickyAction(`<button type="button" data-open="delivery-confirm" data-key="delId" data-val="${d.id}" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Next: Confirm Customer Delivery (POD) →</button>`)}`;
+}
+function renderTrackCourier() {
+  const d = getDel('DEL-002');
+  const p = getProv(d.providerId);
+  return `${renderTopBar(`Track ${d.id}`, { back: true, fallback: 'tracking-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(p.name)}</strong>${badgeHTML(d.status)}</div><div class="flex justify-between bg-slate-50 rounded-lg p-2.5"><span>LR / Tracking No: <strong>${esc(d.trackingNo)}</strong></span><button type="button" data-action="toast" data-msg="Copied ${d.trackingNo}" class="text-[#1D4ED8] font-semibold">Copy</button></div><div class="text-slate-600">Latest: ${esc(d.reportedLocation)} (${esc(d.lastUpdated)})</div><div class="grid grid-cols-2 gap-2"><button type="button" data-action="toast" data-msg="Opened ${p.name} tracking portal" class="py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-medium">Provider Site</button><button type="button" data-open="update-status" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">Update Manually</button></div></div></div>${renderStickyAction(`<button type="button" data-open="delivery-confirm" data-key="delId" data-val="${d.id}" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirm Delivery (POD)</button>`)}`;
+}
+function renderUpdateStatus() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Update Delivery Status', { back: true, fallback: 'tracking-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div><label class="block font-medium mb-1">New Status *</label><select id="usStatus" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>In Transit</option><option>Reached Destination</option><option>Out for Delivery</option><option>Delayed</option><option>Delivery Failed</option><option>Delivered</option></select></div><div><label class="block font-medium mb-1">Current Location (Optional)</label><input id="usLoc" type="text" value="${esc(d.reportedLocation)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Remarks</label><textarea id="usRem" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea></div></div></div>${renderStickyAction(`<button type="button" data-action="save-track-status" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Tracking Update</button>`)}`;
+}
+function renderDelayedList() {
+  const list = state.deliveries.filter((d) => d.status === 'Delayed');
+  return `${renderTopBar('Delayed Deliveries', { back: true, fallback: 'tracking-list' })}<div class="phone-scroll p-3.5 space-y-2.5">${list.map((d) => `<div class="bg-white border border-rose-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><strong class="text-sm">${esc(d.id)} • ${esc(d.customer)}</strong>${badgeHTML('Delayed')}</div><div class="text-rose-700">${esc(d.delayReason)}</div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="reschedule" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">Reschedule</button><button type="button" data-open="update-status" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Update Status</button></div></div>`).join('')}</div>`;
+}
+function renderReschedule() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Reschedule Delivery', { back: true, fallback: 'delayed-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div><strong>${esc(d.id)} • ${esc(d.customer)}</strong><div class="text-slate-500">Original ETA: ${esc(d.plannedDelivery)}</div></div><div><label class="block font-medium mb-1">New Expected Delivery Date *</label><input id="rsDate" type="date" value="2026-11-23" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Reason *</label><input id="rsReason" type="text" value="Transit highway delay" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="confirm-reschedule" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Confirm Reschedule</button>`)}`;
+}
+function renderDeliveryFailed() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Delivery Failed', { back: true, fallback: 'tracking-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-rose-200 rounded-xl p-3.5 space-y-3 text-xs"><div class="font-semibold">${esc(d.id)} • ${esc(d.customer)}</div><div><label class="block font-medium mb-1">Failure Reason *</label><select class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Customer Unavailable</option><option>Incorrect Address</option><option>Transport Breakdown</option><option>Customer Refused Delivery</option><option>Damaged Product</option><option>Other</option></select></div><div><label class="block font-medium mb-1">Next Action</label><select id="dfNext" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option value="reschedule">Reschedule Delivery</option><option value="return">Return Products</option></select></div></div></div>${renderStickyAction(`<button type="button" data-action="save-failed" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold">Save Delivery Result</button>`)}`;
+}
+function renderDeliveryConfirm() {
+  const d = getDel(state.selected.delId);
+  const bal = Math.max(0, d.orderAmount - d.receivedAmount);
+  return `${renderTopBar('Delivery Confirmation (POD)', { back: true, fallback: 'tracking-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong class="text-[#1D4ED8]">${esc(d.id)} • ${esc(d.soId)} • ${esc(d.customer)}</strong><div>${esc(d.product)} — Dispatched: <strong>${d.qty} units</strong></div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Delivered & Accepted</label><input id="podAcc" type="number" max="${d.qty}" value="${d.qty}" class="w-full px-2.5 py-2 bg-emerald-50 border border-emerald-200 rounded-lg font-bold" /></div><div><label class="block font-medium mb-1">Rejected / Damaged</label><input id="podRej" type="number" min="0" value="0" class="w-full px-2.5 py-2 bg-rose-50 border border-rose-200 rounded-lg" /></div></div><div><label class="block font-medium mb-1">Received By (Customer Rep) *</label><input id="podRecBy" type="text" value="${esc(d.contact)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div class="border border-dashed border-slate-300 rounded-lg p-3 text-center text-slate-500">Signed Delivery Challan / Customer Signature Attached</div>${bal > 0 ? `<div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 space-y-2"><div class="font-semibold text-amber-800">Collect Balance on Delivery: ${fmtINR(bal)}</div><input id="podPay" type="number" value="${bal}" class="w-full px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg font-bold" /></div>` : ''}</div></div>${renderStickyAction(`<button type="button" data-action="confirm-pod" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirm Delivery</button>`)}`;
+}
+function renderDeliverySuccess() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Delivery Completed', { back: true, fallback: 'dashboard' })}<div class="phone-scroll p-4 flex flex-col justify-center"><div class="bg-white border border-emerald-200 rounded-2xl p-5 text-center space-y-2.5"><div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto"><i data-lucide="check" class="w-6 h-6"></i></div><div class="text-base font-bold text-slate-900">Delivery Confirmed!</div><div class="text-xs text-slate-600">${esc(d.id)} • ${esc(d.customer)} (${d.deliveredQty || d.qty} units)<br/>SO-001 updated to <strong>Delivered</strong> & Vehicle freed.</div><div class="grid grid-cols-2 gap-2 pt-2"><button type="button" data-open="pod-details" data-key="delId" data-val="${d.id}" class="py-2 rounded-lg border border-slate-200 text-xs font-semibold">View POD</button><button type="button" data-nav="dashboard" class="py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Dashboard</button></div></div></div>`;
+}
+function renderPODDetails() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar(`POD: ${d.id}`, { back: true, fallback: 'completed-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-xs space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(d.customer)}</strong>${badgeHTML('Delivered')}</div><div>Ref: ${esc(d.soId)} • ${esc(d.product)} × ${d.deliveredQty || d.qty} units</div><div>Received By: <strong>${esc(d.receiverName || d.contact)}</strong> on ${esc(d.actualDelivery || todayStr())}</div><div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center text-emerald-800 font-medium">Digital Signature & Signed DC-001 Verified</div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Downloaded POD_${d.id}.pdf" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Download Proof of Delivery</button>`)}`;
+}
+
+// 49–56. TRANSPORT EXPENSES, RETURNS, COMPLETED DELIVERIES & HISTORY
+function renderExpensesList() {
+  const est = state.deliveries.reduce((a, d) => a + d.estExpense, 0);
+  const act = state.deliveries.reduce((a, d) => a + sumExpenses(d), 0);
+  return `${renderTopBar('Delivery Expenses', { back: true, fallback: 'more', right: `<button type="button" data-nav="add-expense" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>` })}<div class="phone-scroll p-3.5 space-y-3"><div class="grid grid-cols-2 gap-2 text-center text-xs"><div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Estimated</div><strong>${fmtINR(est)}</strong></div><div class="bg-blue-50 border border-blue-200 rounded-xl p-2.5"><div class="text-[10px] text-[#1D4ED8]">Actual Expenses</div><strong class="text-[#1E3A8A]">${fmtINR(act)}</strong></div></div>${state.deliveries.map((d) => `<button type="button" data-open="expense-details" data-key="delId" data-val="${d.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center text-xs"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.method)}</div><div class="text-slate-600">${esc(d.method === 'Own Vehicle' ? getVeh(d.vehicleId).regNo : getProv(d.providerId).name)}</div></div><strong class="text-sm">${fmtINR(sumExpenses(d))}</strong></button>`).join('')}</div>${renderBottomNav('more')}`;
+}
+function renderAddExpense() {
+  const d = getDel(state.selected.delId);
+  const types = d.method === 'Own Vehicle' ? ['Fuel', 'Toll', 'Parking', 'Loading / Unloading', 'Other'] : ['Courier Charge', 'Freight Charge', 'Loading / Unloading', 'Other'];
+  return `${renderTopBar('Add Delivery Expense', { back: true, fallback: 'expenses-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.method)}</div><div><label class="block font-medium mb-1">Expense Type</label><select id="exType" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${types.map((t) => `<option>${t}</option>`).join('')}</select></div><div><label class="block font-medium mb-1">Amount (₹) *</label><input id="exAmt" type="number" value="500" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold" /></div><div><label class="block font-medium mb-1">Payment Status</label><select id="exStat" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Paid</option><option>Pending</option></select></div></div></div>${renderStickyAction(`<button type="button" data-action="save-exp" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Expense</button>`)}`;
+}
+function renderExpenseDetails() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar(`Expenses: ${d.id}`, { back: true, fallback: 'expenses-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="flex justify-between"><span>Estimated: ${fmtINR(d.estExpense)}</span><strong>Actual: ${fmtINR(sumExpenses(d))}</strong></div>${d.expenses.map((e) => `<div class="flex justify-between py-1.5 border-t border-slate-100"><span>${esc(e.type)} (${esc(e.date)})</span><div class="flex items-center gap-2"><strong>${fmtINR(e.amount)}</strong>${badgeHTML(e.status)}</div></div>`).join('')}</div></div>${renderStickyAction(`<button type="button" data-open="add-expense" data-key="delId" data-val="${d.id}" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">+ Expense</button><button type="button" data-open="record-transport-pay" data-key="delId" data-val="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Record Transport Payment</button>`)}`;
+}
+function renderRecordTransportPay() {
+  const d = getDel(state.selected.delId);
+  const pend = d.expenses.filter((e) => e.status === 'Pending').reduce((a, e) => a + e.amount, 0);
+  return `${renderTopBar('Record Transport Payment', { back: true, fallback: 'expense-details' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • Pending Payable: ${fmtINR(pend)}</div><div><label class="block font-medium mb-1">Payment Amount (₹)</label><input id="tpAmt" type="number" value="${pend || 500}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold" /></div><div><label class="block font-medium mb-1">Method</label><select class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>UPI</option><option>Bank Transfer</option><option>Cash</option></select></div><div class="text-[11px] text-slate-400">Company transport expenses are never deducted from customer payment balances.</div></div></div>${renderStickyAction(`<button type="button" data-action="save-tp" data-id="${d.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Transport Payment</button>`)}`;
+}
+function renderProductReturn() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar('Product Return', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.customer)} — ${esc(d.product)}</div><div class="grid grid-cols-2 gap-2"><div><label class="block font-medium mb-1">Returned Qty</label><input type="number" min="1" max="${d.qty}" value="1" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Condition</label><select class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Good Condition</option><option>Damaged</option><option>Inspection Required</option></select></div></div><div><label class="block font-medium mb-1">Return Reason</label><input type="text" placeholder="Transit damage / customer refused" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Product return logged for inspection" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Confirm Return</button>`)}`;
+}
+function renderCompletedList() {
+  const list = state.deliveries.filter((d) => d.status === 'Delivered');
+  return `${renderTopBar('Completed Deliveries', { back: true, fallback: 'orders-hub' })}<div class="phone-scroll p-3.5 space-y-2.5">${list.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(d.id)} • ${esc(d.soId)}</div><div class="text-sm font-semibold text-slate-900">${esc(d.customer)}</div><div class="text-slate-500">${esc(d.product)} × ${d.deliveredQty || d.qty} • ${esc(d.actualDelivery || todayStr())}</div></div>${badgeHTML('Delivered')}</div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="completed-details" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">Summary</button><button type="button" data-open="pod-details" data-key="delId" data-val="${d.id}" class="py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold">View POD</button></div></div>`).join('')}</div>${renderBottomNav('orders')}`;
+}
+function renderCompletedDetails() {
+  const d = getDel(state.selected.delId);
+  return `${renderTopBar(`Completed: ${d.id}`, { back: true, fallback: 'completed-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="flex justify-between"><strong class="text-sm">${esc(d.customer)}</strong>${badgeHTML(d.status)}</div><div>${esc(d.product)} × ${d.deliveredQty || d.qty} • Ref ${esc(d.soId)} / ${esc(d.proId)}</div><div>Delivered: ${esc(d.actualDelivery || todayStr())} • Receiver: ${esc(d.receiverName || d.contact)}</div></div><details class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs"><summary class="font-semibold text-[#1E3A8A] cursor-pointer">Payment & Expense Summary</summary><div class="mt-2 pt-2 border-t space-y-1"><div>Customer Paid: ${fmtINR(d.receivedAmount)} / ${fmtINR(d.orderAmount)}</div><div>Transport Expense: ${fmtINR(sumExpenses(d))}</div></div></details></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Downloaded Delivery Summary PDF" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Download Delivery Summary</button>`)}`;
+}
+function renderDeliveryHistory() {
+  return `${renderTopBar('Delivery History', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden"><table class="w-full text-left border-collapse text-xs"><thead class="bg-slate-50 border-b text-[11px] text-slate-500"><tr><th class="py-2 px-3">Delivery</th><th class="py-2 px-2">Method</th><th class="py-2 px-3 text-right">Status</th></tr></thead><tbody class="divide-y divide-slate-100">${state.deliveries.map((d) => `<tr class="hover:bg-slate-50 cursor-pointer" data-open="plan-details" data-key="delId" data-val="${d.id}"><td class="py-2.5 px-3"><div class="font-semibold text-[#1D4ED8]">${esc(d.id)}</div><div class="text-[11px] text-slate-600">${esc(d.customer)}</div></td><td class="py-2.5 px-2 text-[11px]">${esc(d.method.split(' ')[0])}</td><td class="py-2.5 px-3 text-right">${badgeHTML(d.status)}</td></tr>`).join('')}</tbody></table></div></div>${renderBottomNav('more')}`;
+}
+
+// 57–61. HUBS, MORE, NOTIFICATIONS, PROFILE
+function renderOrdersHub() {
+  return `${renderTopBar('Orders')}<div class="phone-scroll p-3.5 space-y-2.5">${[['Ready for Delivery', 'Completed orders from Production', state.readyOrders.length, 'ready-list', 'package'], ['Delivery Planning', 'Scheduled & active plans', state.deliveries.length, 'plan-list', 'calendar'], ['Completed Deliveries', 'Delivered orders with POD', state.deliveries.filter((d) => d.status === 'Delivered').length, 'completed-list', 'check-circle-2']].map(([t, d, c, s, ic]) => `<button type="button" data-nav="${s}" class="w-full bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center text-left hover:border-[#1D4ED8]"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><strong class="text-base text-[#1E3A8A]">${c}</strong></button>`).join('')}</div>${renderBottomNav('orders')}`;
+}
+function renderDispatchHub() {
+  return `${renderTopBar('Dispatch')}<div class="phone-scroll p-3.5 space-y-2.5">${[['Packing', 'Prepare crates & checklists', state.deliveries.length, 'packing-list', 'box'], ['Delivery Challans', 'Generate & preview challans', state.deliveries.length, 'challan-list', 'file-text'], ['Ready to Dispatch', 'Confirm vehicle or courier', state.deliveries.filter((d) => d.status === 'Ready to Dispatch').length, 'ready-dispatch', 'truck'], ['Dispatched Orders', 'View all dispatched loads', state.deliveries.length, 'dispatched-list', 'send']].map(([t, d, c, s, ic]) => `<button type="button" data-nav="${s}" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center text-left hover:border-[#1D4ED8]"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><strong class="text-base text-[#1E3A8A]">${c}</strong></button>`).join('')}</div>${renderBottomNav('dispatch')}`;
+}
+function renderMore() {
+  return `${renderTopBar('More')}<div class="phone-scroll p-3.5 space-y-4"><button type="button" data-nav="profile" class="w-full bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 text-left"><div class="w-10 h-10 rounded-full bg-[#1E3A8A] text-white font-bold text-sm flex items-center justify-center">PK</div><div class="flex-1"><div class="text-sm font-semibold">${esc(USER.name)}</div><div class="text-xs text-slate-500">${esc(USER.department)}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs font-medium">${[['Vehicles', 'vehicles-list'], ['Courier & Transport Providers', 'providers-list'], ['Customer Payments', 'payments-list'], ['Delivery Expenses', 'expenses-list'], ['Delivery History', 'delivery-history'], ['Completed Deliveries', 'completed-list'], ['Product Returns', 'product-return'], ['Notifications', 'notifications'], ['Profile', 'profile'], ['Common UI States (17)', 'ui-states']].map(([l, s]) => `<button type="button" data-nav="${s}" class="w-full px-3.5 py-2.5 flex justify-between text-slate-800 hover:bg-slate-50"><span>${l}</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></button>`).join('')}<button type="button" data-action="toast" data-msg="Signed out of Cryo ERP Logistics" class="w-full px-3.5 py-2.5 flex justify-between text-rose-600"><span>Logout</span><i data-lucide="log-out" class="w-4 h-4"></i></button></div></div>${renderBottomNav('more')}`;
+}
+function renderNotifications() {
+  return `${renderTopBar('Notifications', { back: true, fallback: 'dashboard', right: `<button type="button" data-action="mark-all-read" class="text-xs font-semibold text-[#1D4ED8]">Mark All Read</button>` })}<div class="phone-scroll p-3.5 space-y-2">${state.notifications.map((n) => `<button type="button" data-action="open-notif" data-id="${n.id}" class="w-full text-left bg-white border ${n.unread ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200'} rounded-xl p-3 space-y-1"><div class="flex justify-between text-[10px]"><span class="font-semibold uppercase text-[#1D4ED8]">${esc(n.type)}</span><span class="text-slate-400">${esc(n.time)}</span></div><div class="text-xs font-semibold text-slate-900">${esc(n.title)}</div><div class="text-[11px] text-slate-600">${esc(n.desc)}</div></button>`).join('')}</div>`;
+}
+function renderProfile() {
+  return `${renderTopBar('Profile', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-center"><div class="w-16 h-16 rounded-full bg-[#1E3A8A] text-white font-bold text-lg flex items-center justify-center mx-auto mb-2">PK</div><div class="text-base font-semibold">${esc(USER.name)}</div><div class="text-xs text-[#1D4ED8] font-medium">${esc(USER.department)}</div></div><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">${[['Employee ID', USER.empId], ['Department', USER.department], ['Email', USER.email], ['Phone', USER.phone]].map(([k, v]) => `<div class="px-3.5 py-2.5 flex justify-between"><span class="text-slate-500">${k}</span><strong>${esc(v)}</strong></div>`).join('')}</div><button type="button" data-action="toast" data-msg="Password reset sent" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">Change Password</button><button type="button" data-action="toast" data-msg="Signed out" class="w-full py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">Logout</button></div>`;
+}
+
+// 62. COMMON UI STATES (ALL 17 STATES)
+function renderUIStates() {
+  const s17 = [
+    ['no-pro', 'No Ready PROs', 'package', 'text-slate-300', 'No completed Production Orders', 'QC-approved orders from Production appear here automatically.', 'Dashboard', 'dashboard'],
+    ['no-plan', 'No Plans', 'calendar', 'text-slate-300', 'No deliveries planned', 'Select a ready Production Order to create a delivery plan.', 'Ready Orders', 'ready-list'],
+    ['veh-unavail', 'Vehicle Busy', 'truck', 'text-amber-500', 'Vehicle Unavailable', 'TN 01 AB 1234 is assigned to DEL-001. Select TN 09 CD 5678 or Courier.', 'Select Vehicle', 'vehicles-list'],
+    ['pack-pend', 'Packing Pending', 'box', 'text-amber-500', 'Packing Pending', 'Complete wooden crate packing and checklist before dispatch.', 'Prepare Packing', 'prepare-packing'],
+    ['pay-hold', 'Payment Hold', 'shield-alert', 'text-rose-500', 'Payment Hold', 'Pre-dispatch payment required per Sales Order terms.', 'Verify Payment', 'payment-verify'],
+    ['ready-dispatch', 'Ready to Dispatch', 'check-circle-2', 'text-emerald-500', 'DEL-001 Ready to Dispatch', 'PKG-001 & DC-001 completed. TN 01 AB 1234 ready for departure.', 'Confirm Dispatch', 'dispatch-own'],
+    ['in-transit', 'In Transit', 'navigation', 'text-blue-500', 'Delivery In Transit', 'DEL-001 departed Cryo Plant via TN 01 AB 1234.', 'Track Delivery', 'track-own'],
+    ['track-na', 'Tracking N/A', 'map-pin-off', 'text-slate-400', 'Live GPS Not Integrated', 'Use manual status updates or the provider tracking website.', 'Update Manually', 'update-status'],
+    ['delayed', 'Delayed', 'clock', 'text-rose-500', 'Delivery Delayed', 'DEL-002 delayed near Nellore Hub. Revised ETA: Nov 21.', 'Reschedule', 'reschedule'],
+    ['failed', 'Delivery Failed', 'x-circle', 'text-rose-600', 'Delivery Attempt Failed', 'Customer unavailable at gate. Choose Reattempt or Return.', 'Handle Failed', 'delivery-failed'],
+    ['partial', 'Partial Delivered', 'package-open', 'text-amber-500', 'Partial Delivery Completed', '1 of 2 Deep Freezers delivered. Remaining 1 unit open on SO-001.', 'View Orders', 'orders-hub'],
+    ['delivered', 'Delivered', 'check-check', 'text-emerald-600', 'Delivery Completed', 'DEL-001 delivered, POD signed, ₹50,000 collected & SO-001 Delivered.', 'View POD', 'pod-details'],
+    ['loading', 'Loading', '', '', '', '', '', ''],
+    ['success', 'Success', 'check-circle-2', 'text-emerald-500', 'Delivery Plan Saved', 'DEL-001 created from PRO-001 with zero manual re-entry.', 'Done', 'plan-list'],
+    ['network', 'Network Error', 'wifi-off', 'text-rose-400', 'Connection Lost', 'Unable to sync delivery status. Retry when online.', 'Retry', 'dashboard'],
+    ['validation', 'Form Validation', 'alert-circle', 'text-rose-500', 'Invalid Delivery Quantity', 'Delivery quantity (3) cannot exceed QC-approved quantity (2).', 'Fix Quantity', 'create-plan'],
+    ['confirm', 'Confirm Dialog', 'help-circle', 'text-[#1E3A8A]', 'Confirm Dispatch?', 'Dispatching DEL-001 locks packing and marks TN 01 AB 1234 In Transit.', 'Confirm', 'dispatch-confirm']
+  ];
+  const cur = s17.find((x) => x[0] === state.uiStateDemo) || s17[5];
+  const body = cur[0] === 'loading'
+    ? `<div class="space-y-2.5">${[1, 2, 3].map(() => `<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="h-3 w-24 skeleton"></div><div class="h-4 w-44 skeleton"></div><div class="h-3 w-full skeleton"></div></div>`).join('')}</div>`
+    : `<div class="bg-white border border-slate-200 rounded-xl p-6 text-center space-y-2"><i data-lucide="${cur[2]}" class="w-10 h-10 ${cur[3]} mx-auto"></i><div class="text-sm font-semibold">${cur[4]}</div><div class="text-xs text-slate-500">${cur[5]}</div><button type="button" data-nav="${cur[7]}" class="mt-2 px-4 py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">${cur[6]}</button></div>`;
+  return `${renderTopBar('Common UI States (17)', { back: true, fallback: 'more' })}<div class="bg-white border-b border-slate-200 px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${s17.map((s) => `<button type="button" data-action="set-ui-state" data-val="${s[0]}" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap border ${cur[0] === s[0] ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${s[1]}</button>`).join('')}</div><div class="phone-scroll p-3.5 flex flex-col justify-center">${body}</div>`;
+}
+
+/* ---------- SELECTION BOTTOM SHEETS (SECTIONS 16 & 21) ---------- */
+function renderSheet() {
+  const root = document.getElementById('sheetRoot');
+  if (!state.activeSheet) { root.className = 'hidden'; root.innerHTML = ''; return; }
+  const s = state.activeSheet;
+  let title = '', content = '', footer = '';
+  if (s.type === 'select-veh') {
+    title = 'Select Company Vehicle';
+    content = `<div class="space-y-2 text-xs">${state.vehicles.map((v) => `<button type="button" data-action="pick-veh" data-id="${v.id}" class="w-full text-left bg-slate-50 border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3 flex justify-between items-center"><div><div class="font-semibold">${esc(v.regNo)}</div><div class="text-slate-500">${esc(v.type)} • ${esc(v.capacity)}</div></div>${badgeHTML(v.status)}</button>`).join('')}</div>`;
+    footer = `<button type="button" data-nav="add-vehicle" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">+ Add New Vehicle</button>`;
+  } else if (s.type === 'select-prov') {
+    title = 'Select Courier / Transport';
+    content = `<div class="space-y-2 text-xs">${state.providers.map((p) => `<button type="button" data-action="pick-prov" data-id="${p.id}" class="w-full text-left bg-slate-50 border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3 flex justify-between items-center"><div><div class="font-semibold">${esc(p.name)}</div><div class="text-slate-500">${esc(p.type)} • ${esc(p.phone)}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div>`;
+    footer = `<button type="button" data-nav="add-provider" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">+ Add New Provider</button>`;
+  }
+  root.className = 'sheet-backdrop';
+  root.innerHTML = `<div class="sheet-panel"><div class="px-4 py-3 border-b border-slate-200 flex justify-between items-center"><h2 class="text-sm font-semibold">${esc(title)}</h2><button type="button" data-action="close-sheet" class="p-1 text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="p-4 overflow-y-auto">${content}</div><div class="px-4 py-3 border-t border-slate-200 bg-white">${footer}</div></div>`;
+  lucide.createIcons({ nodes: [root] });
+}
+
+/* ---------- ROUTER, SIDEBAR, GALLERY & WORKFLOW ---------- */
+function renderScreenMarkup(id) {
+  const map = {
+    'dashboard': renderDashboard, 'ready-list': renderReadyList, 'completed-pro-details': renderCompletedPRODetails,
+    'plan-list': renderPlanList, 'create-plan': () => renderPlanForm(false), 'plan-details': renderPlanDetails, 'edit-plan': () => renderPlanForm(true),
+    'vehicles-list': renderVehiclesList, 'add-vehicle': () => renderVehicleForm(false), 'vehicle-details': renderVehicleDetails, 'edit-vehicle': () => renderVehicleForm(true), 'vehicle-select-sheet': () => renderPlanForm(false),
+    'providers-list': renderProvidersList, 'add-provider': () => renderProviderForm(false), 'provider-details': renderProviderDetails, 'edit-provider': () => renderProviderForm(true), 'provider-select-sheet': () => renderPlanForm(false),
+    'payments-list': renderPaymentsList, 'payment-verify': renderPaymentVerify, 'record-payment': renderRecordPayment, 'payment-details': renderPaymentDetails,
+    'packing-list': renderPackingList, 'prepare-packing': renderPreparePacking, 'packing-details': renderPackingDetails, 'packing-preview': renderPackingPreview,
+    'challan-list': renderChallanList, 'create-challan': renderCreateChallan, 'challan-preview': renderChallanPreview,
+    'ready-dispatch': renderReadyDispatch, 'dispatch-own': renderDispatchOwn, 'dispatch-courier': renderDispatchCourier, 'dispatch-confirm': renderDispatchConfirm,
+    'dispatched-list': renderDispatchedList, 'dispatch-details': renderDispatchDetails, 'tracking-list': renderTrackingList, 'track-own': renderTrackOwn,
+    'track-courier': renderTrackCourier, 'update-status': renderUpdateStatus, 'delayed-list': renderDelayedList, 'reschedule': renderReschedule,
+    'delivery-failed': renderDeliveryFailed, 'delivery-confirm': renderDeliveryConfirm, 'delivery-success': renderDeliverySuccess, 'pod-details': renderPODDetails,
+    'expenses-list': renderExpensesList, 'add-expense': renderAddExpense, 'expense-details': renderExpenseDetails, 'record-transport-pay': renderRecordTransportPay,
+    'product-return': renderProductReturn, 'completed-list': renderCompletedList, 'completed-details': renderCompletedDetails, 'delivery-history': renderDeliveryHistory,
+    'orders-hub': renderOrdersHub, 'dispatch-hub': renderDispatchHub, 'more': renderMore, 'notifications': renderNotifications, 'profile': renderProfile, 'ui-states': renderUIStates
+  };
+  return (map[id] || renderDashboard)();
+}
+
+function renderSidebar() {
+  document.getElementById('sbModeFlowBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'flow' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sbModeAllBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'all' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sidebarSearchWrap').classList.toggle('hidden', state.sidebarMode !== 'all');
+  const c = document.getElementById('sidebarList');
+
+  if (state.sidebarMode === 'flow') {
+    const steps = [
+      ['★', 'Logistics Dashboard', 'Ready orders, transit & pending alerts', 'dashboard'],
+      ['1', 'Ready Orders → Plan Delivery', 'PRO-001 → DEL-001 (Own Vehicle or Courier)', 'ready-list'],
+      ['2', 'Verify Payment Terms', 'Check ₹1,00,000 paid & ₹50,000 COD', 'payment-verify'],
+      ['3', 'Packing & Delivery Challan', 'PKG-001 checklist & DC-001 document', 'packing-details'],
+      ['4', 'Dispatch (Vehicle / Courier)', 'Confirm DSP-001 via TN 01 AB 1234', 'dispatch-own'],
+      ['5', 'Track & Handle Delays', 'Own vehicle status or LR-10001 tracking', 'tracking-list'],
+      ['6', 'Confirm Delivery (POD)', 'Signed POD, collect ₹50,000 & update SO-001', 'delivery-confirm'],
+      ['7', 'Expenses, Vehicles & Providers', 'Fuel/Toll/Freight logs & shared masters', 'expenses-list']
+    ];
+    c.innerHTML = `<div class="px-1.5 pt-1 pb-2"><div class="text-xs font-semibold text-slate-900">Simple Delivery Flow</div><div class="text-[11px] text-slate-500 mt-0.5">Tap any stage to try it live in the phone.</div></div><div class="space-y-1.5 px-1">${steps.map(([n, t, d, sc]) => `<button type="button" data-sidebar-screen="${sc}" class="w-full p-2.5 rounded-xl text-left border transition flex items-start gap-2.5 ${state.screen === sc && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-800 border-slate-200 hover:border-[#1D4ED8]'}"><span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 ${state.screen === sc && state.viewMode === 'phone' ? 'bg-white text-[#1E3A8A]' : 'bg-blue-50 text-[#1E3A8A]'}">${n}</span><div><div class="text-xs font-semibold leading-tight">${t}</div><div class="text-[11px] mt-0.5 ${state.screen === sc && state.viewMode === 'phone' ? 'text-blue-100' : 'text-slate-500'}">${d}</div></div></button>`).join('')}</div><div class="px-1 pt-2 border-t border-slate-200"><button type="button" data-sidebar-screen="ui-states" class="w-full px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 text-left">Common UI States (17)</button></div>`;
+    return;
+  }
+
+  const sv = (document.getElementById('sidebarSearch')?.value || '').trim().toLowerCase();
+  c.innerHTML = SCREEN_CATALOG.map((grp) => {
+    const items = grp.items.filter((i) => !sv || `${i.num} ${i.title} ${grp.group}`.toLowerCase().includes(sv));
+    if (!items.length) return '';
+    return `<div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1">${esc(grp.group)}</div><div class="space-y-0.5">${items.map((it) => `<button type="button" data-sidebar-screen="${it.id}" class="w-full px-2.5 py-1.5 rounded-lg text-left text-xs ${state.screen === it.id && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white font-semibold' : 'text-slate-700 hover:bg-slate-100'}"><span class="opacity-60 mr-1.5">${it.num}.</span>${esc(it.title)}</button>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function renderGallery() {
+  const c = document.getElementById('galleryContainer');
+  const all = SCREEN_CATALOG.flatMap((g) => g.items.map((i) => ({ ...i, group: g.group })));
+  const groups = ['All', ...SCREEN_CATALOG.map((g) => g.group)];
+  const shown = state.galleryCategory === 'All' ? all : all.filter((i) => i.group === state.galleryCategory);
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h2 class="text-base font-bold">All 58 Logistics & Delivery Screens</h2><p class="text-xs text-slate-500">Click any screen card to open it in the interactive phone.</p></div><div class="flex gap-1.5 overflow-x-auto no-scrollbar">${groups.map((g) => `<button type="button" data-gallery-cat="${esc(g)}" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border ${state.galleryCategory === g ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${esc(g)}</button>`).join('')}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">${shown.map((it) => `<div data-gallery-open="${it.id}" class="bg-white border border-slate-200 rounded-2xl p-3 cursor-pointer hover:border-[#1D4ED8] hover:shadow-md transition flex flex-col"><div class="text-xs font-semibold mb-2 truncate"><span class="text-[#1D4ED8] mr-1">#${it.num}</span>${esc(it.title)}</div><div class="gallery-mini-phone pointer-events-none select-none"><div class="origin-top-left w-[360px] h-[640px] scale-[0.65] flex flex-col bg-[#F8FAFC]">${renderScreenMarkup(it.id)}</div></div></div>`).join('')}</div>`;
+  lucide.createIcons({ nodes: [c] });
+}
+
+function renderWorkflowMap() {
+  const c = document.getElementById('workflowContainer');
+  const stages = [
+    ['1', 'Completed PRO (PRO-001)', 'QC-approved Deep Freezer × 2 arrives from Production', 'completed-pro-details'],
+    ['2', 'Delivery Plan (DEL-001)', 'Choose Own Vehicle (TN 01 AB 1234) or Courier (LR-10001)', 'create-plan'],
+    ['3', 'Payment Verification', 'Verify SO-001 terms: ₹1,00,000 paid, ₹50,000 COD', 'payment-verify'],
+    ['4', 'Packing & Challan', 'Complete PKG-001 crates & generate DC-001', 'packing-details'],
+    ['5', 'Dispatch (DSP-001)', 'Confirm dispatch, mark In Transit & log transport expenses', 'dispatch-own'],
+    ['6', 'Tracking & Delays', 'Manual vehicle status / courier LR-10001 tracking & reschedule', 'tracking-list'],
+    ['7', 'Proof of Delivery (POD)', 'Capture receiver name, signed DC, collect ₹50,000 COD', 'delivery-confirm'],
+    ['8', 'Completed & Synced', 'SO-001 → Delivered, Payment → Paid, Vehicle → Available', 'completed-details']
+  ];
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4"><div><h2 class="text-base font-bold">Cryo ERP – End-to-End Logistics & Delivery Workflow</h2><p class="text-xs text-slate-500">Consistent flow: PRO-001 → DEL-001 → PKG-001 → DC-001 → DSP-001 → POD → SO-001 Delivered.</p></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">${stages.map(([n, t, d, sc]) => `<button type="button" data-gallery-open="${sc}" class="text-left bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3.5 space-y-1.5"><span class="w-6 h-6 rounded-full bg-[#1E3A8A] text-white text-xs font-bold flex items-center justify-center">${n}</span><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-600">${d}</div></button>`).join('')}</div></div>`;
+}
+
+function renderAll() {
+  ['Phone', 'Gallery', 'Flow'].forEach((m) => {
+    const key = m.toLowerCase() === 'flow' ? 'workflow' : m.toLowerCase();
+    document.getElementById(`mode${m}Btn`).className = `px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${state.viewMode === key ? 'bg-[#1E3A8A] text-white shadow-sm' : 'text-slate-600'}`;
+  });
+  document.getElementById('phoneContainer').classList.toggle('hidden', state.viewMode !== 'phone');
+  document.getElementById('galleryContainer').classList.toggle('hidden', state.viewMode !== 'gallery');
+  document.getElementById('workflowContainer').classList.toggle('hidden', state.viewMode !== 'workflow');
+  renderSidebar();
+  if (state.viewMode === 'phone') {
+    const root = document.getElementById('screenRoot');
+    root.innerHTML = renderScreenMarkup(state.screen);
+    lucide.createIcons({ nodes: [root] });
+    renderSheet();
+    const meta = SCREEN_CATALOG.flatMap((g) => g.items).find((i) => i.id === state.screen);
+    const metaEl = document.getElementById('screenFooterMeta');
+    if (meta && metaEl) metaEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-[#1E3A8A]">Screen #${meta.num}</span><span>${esc(meta.title)}</span><span>•</span><span><strong>Logistics & Delivery</strong></span>`;
+  } else if (state.viewMode === 'gallery') renderGallery();
+  else renderWorkflowMap();
+}
+
+/* ---------- EVENTS ---------- */
+document.getElementById('modePhoneBtn').addEventListener('click', () => { state.viewMode = 'phone'; renderAll(); });
+document.getElementById('modeGalleryBtn').addEventListener('click', () => { state.viewMode = 'gallery'; renderAll(); });
+document.getElementById('modeFlowBtn').addEventListener('click', () => { state.viewMode = 'workflow'; renderAll(); });
+document.getElementById('sbModeFlowBtn').addEventListener('click', () => { state.sidebarMode = 'flow'; renderSidebar(); });
+document.getElementById('sbModeAllBtn').addEventListener('click', () => { state.sidebarMode = 'all'; renderSidebar(); });
+document.getElementById('sidebarSearch').addEventListener('input', () => renderSidebar());
+
+const sidebarEl = document.getElementById('screenSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+document.getElementById('toggleSidebarBtn').addEventListener('click', () => { sidebarEl.classList.toggle('-translate-x-full'); sidebarOverlay.classList.toggle('hidden'); });
+sidebarOverlay.addEventListener('click', () => { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); });
+
+document.addEventListener('click', (e) => {
+  const sb = e.target.closest('[data-sidebar-screen]');
+  if (sb) { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); navigate(sb.dataset.sidebarScreen); return; }
+  const gc = e.target.closest('[data-gallery-cat]');
+  if (gc) { state.galleryCategory = gc.dataset.galleryCat; renderGallery(); return; }
+  const go = e.target.closest('[data-gallery-open]');
+  if (go) { navigate(go.dataset.galleryOpen); return; }
+  const nav = e.target.closest('[data-nav]');
+  if (nav) { navigate(nav.dataset.nav); return; }
+  const opn = e.target.closest('[data-open]');
+  if (opn) { navigate(opn.dataset.open, { key: opn.dataset.key, val: opn.dataset.val }); return; }
+
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const act = btn.dataset.action;
+
+  if (act === 'go-back') goBack(btn.dataset.fallback || 'dashboard');
+  else if (act === 'close-sheet') { state.activeSheet = null; renderSheet(); }
+  else if (act === 'open-sheet') { state.activeSheet = { type: btn.dataset.sheet }; renderSheet(); }
+  else if (act === 'toast') showToast(btn.dataset.msg);
+  else if (act === 'call') showToast(`Calling ${btn.dataset.name} (${btn.dataset.phone})...`);
+  else if (act === 'plan-method') { state.planDraft.method = btn.dataset.val; renderAll(); }
+  else if (act === 'pick-veh') { if (state.planDraft) state.planDraft.vehicleId = btn.dataset.id; state.activeSheet = null; renderAll(); showToast('Vehicle selected'); }
+  else if (act === 'pick-prov') { if (state.planDraft) state.planDraft.providerId = btn.dataset.id; state.activeSheet = null; renderAll(); showToast('Provider selected'); }
+  else if (act === 'save-plan') {
+    const d = state.planDraft;
+    if (d.mode === 'edit') {
+      const del = getDel(d.id);
+      del.method = d.method; del.vehicleId = d.vehicleId; del.providerId = d.providerId;
+      del.plannedDelivery = document.getElementById('plDate')?.value || del.plannedDelivery;
+      del.address = document.getElementById('plAddr')?.value || del.address;
+      navigate('plan-details', { key: 'delId', val: del.id }); showToast(`${del.id} updated`);
+    } else {
+      const r = getReady(d.proId);
+      const newId = `DEL-00${state.deliveries.length + 1}`;
+      state.deliveries.unshift({
+        id: newId, soId: r.soId, proId: r.proId, pkgId: `PKG-00${state.deliveries.length + 1}`, dcId: `DC-00${state.deliveries.length + 1}`, dspId: `DSP-00${state.deliveries.length + 1}`,
+        customer: r.customer, contact: r.contact, phone: r.phone, address: document.getElementById('plAddr')?.value || r.address, destination: r.destination,
+        product: r.product, model: r.model, qty: Number(document.getElementById('plQty')?.value) || r.approvedQty, deliveredQty: 0,
+        plannedDispatch: todayStr(), plannedDelivery: document.getElementById('plDate')?.value || r.expectedDelivery, actualDelivery: '',
+        method: d.method, vehicleId: d.vehicleId, driverName: document.getElementById('plDrvName')?.value || 'Selvam K', driverPhone: document.getElementById('plDrvPhone')?.value || '',
+        providerId: d.providerId, trackingNo: document.getElementById('plTrack')?.value || '', status: 'Planned', packingStatus: 'Pending', packages: 1, packageType: 'Wooden Crate', weight: '—', challanStatus: 'Draft',
+        orderAmount: r.orderAmount, receivedAmount: r.receivedAmount, collectOnDelivery: Math.max(0, r.orderAmount - r.receivedAmount), paymentArrangement: r.paymentTerms, paymentVerified: true,
+        estExpense: Number(document.getElementById('plExp')?.value) || 3000, expenses: [], reportedLocation: 'Cryo Plant', lastUpdated: todayStr(), delayReason: '', receiverName: '', podSigned: false, trackingHistory: []
+      });
+      r.status = 'Planned'; r.plannedQty = r.approvedQty;
+      navigate('plan-details', { key: 'delId', val: newId }); showToast(`${newId} delivery plan saved`);
+    }
+  } else if (act === 'save-veh') {
+    const reg = (document.getElementById('vReg')?.value || '').trim();
+    if (!reg) { showToast('Registration number required', 'error'); return; }
+    if (btn.dataset.mode === 'edit') {
+      Object.assign(getVeh(state.selected.vehId), { regNo: reg, type: document.getElementById('vType')?.value, model: document.getElementById('vModel')?.value, capacity: document.getElementById('vCap')?.value, notes: document.getElementById('vNotes')?.value });
+      navigate('vehicle-details'); showToast('Vehicle updated');
+    } else {
+      const nv = { id: `VEH-0${state.vehicles.length + 1}`, regNo: reg, type: document.getElementById('vType')?.value || 'Mini Truck', model: document.getElementById('vModel')?.value || '', capacity: document.getElementById('vCap')?.value || '', status: 'Available', currentDel: '', notes: document.getElementById('vNotes')?.value || '' };
+      state.vehicles.unshift(nv); navigate('vehicles-list'); showToast(`${reg} added to Vehicles Master`);
+    }
+  } else if (act === 'toggle-veh-avail') {
+    const v = getVeh(btn.dataset.id); v.status = v.status === 'Available' ? 'Maintenance' : 'Available'; renderAll(); showToast(`${v.regNo} marked ${v.status}`);
+  } else if (act === 'save-prov') {
+    const name = (document.getElementById('prName')?.value || '').trim();
+    if (!name) { showToast('Company name required', 'error'); return; }
+    if (btn.dataset.mode === 'edit') {
+      Object.assign(getProv(state.selected.provId), { name, type: document.getElementById('prType')?.value, phone: document.getElementById('prPhone')?.value, trackingUrl: document.getElementById('prUrl')?.value });
+      navigate('provider-details'); showToast('Provider updated');
+    } else {
+      state.providers.unshift({ id: `PROV-0${state.providers.length + 1}`, name, type: document.getElementById('prType')?.value || 'Road Transport', contact: '', phone: document.getElementById('prPhone')?.value || '', email: '', trackingUrl: document.getElementById('prUrl')?.value || '', address: '' });
+      navigate('providers-list'); showToast(`${name} added to Providers Master`);
+    }
+  } else if (act === 'verify-pay') { getDel(btn.dataset.id).paymentVerified = true; navigate('plan-details'); showToast('Payment terms verified'); }
+  else if (act === 'save-cust-pay') {
+    const d = getDel(btn.dataset.id); const amt = Number(document.getElementById('cpAmt')?.value) || 0;
+    if (amt <= 0) { showToast('Enter valid amount', 'error'); return; }
+    d.receivedAmount = Math.min(d.orderAmount, d.receivedAmount + amt);
+    d.collectOnDelivery = Math.max(0, d.orderAmount - d.receivedAmount);
+    navigate('payment-details', { key: 'delId', val: d.id }); showToast(`Recorded ${fmtINR(amt)} & synced with Sales`);
+  } else if (act === 'confirm-pack') {
+    const d = getDel(btn.dataset.id); d.packingStatus = 'Packed'; d.status = 'Ready to Dispatch';
+    d.packages = Number(document.getElementById('pkCount')?.value) || d.packages;
+    d.packageType = document.getElementById('pkType')?.value || d.packageType;
+    navigate('packing-details', { key: 'delId', val: d.id }); showToast(`${d.pkgId} packing confirmed`);
+  } else if (act === 'confirm-dispatch') {
+    const d = getDel(btn.dataset.id); d.status = 'In Transit'; d.challanStatus = 'Dispatched';
+    if (d.vehicleId) getVeh(d.vehicleId).status = 'In Transit';
+    navigate(d.method === 'Own Vehicle' ? 'track-own' : 'track-courier', { key: 'delId', val: d.id });
+    showToast(`${d.id} dispatched — Now In Transit!`);
+  } else if (act === 'save-track-status') {
+    const d = getDel(btn.dataset.id); const st = document.getElementById('usStatus')?.value;
+    d.reportedLocation = document.getElementById('usLoc')?.value || d.reportedLocation;
+    d.lastUpdated = 'Just now';
+    if (st === 'Delivered') { navigate('delivery-confirm', { key: 'delId', val: d.id }); return; }
+    d.status = st; navigate(d.method === 'Own Vehicle' ? 'track-own' : 'track-courier', { key: 'delId', val: d.id });
+    showToast(`Status updated to ${st}`);
+  } else if (act === 'confirm-reschedule') {
+    const d = getDel(btn.dataset.id); d.plannedDelivery = document.getElementById('rsDate')?.value || d.plannedDelivery; d.status = 'In Transit';
+    navigate('tracking-list'); showToast(`${d.id} rescheduled to ${d.plannedDelivery}`);
+  } else if (act === 'save-failed') {
+    const d = getDel(btn.dataset.id); d.status = 'Delivery Failed';
+    navigate(document.getElementById('dfNext')?.value === 'return' ? 'product-return' : 'reschedule', { key: 'delId', val: d.id });
+    showToast('Delivery failure recorded');
+  } else if (act === 'confirm-pod') {
+    const d = getDel(btn.dataset.id);
+    d.deliveredQty = Number(document.getElementById('podAcc')?.value) || d.qty;
+    d.receiverName = document.getElementById('podRecBy')?.value || d.contact;
+    d.actualDelivery = todayStr(); d.podSigned = true; d.status = 'Delivered';
+    const codPaid = Number(document.getElementById('podPay')?.value) || 0;
+    if (codPaid > 0) { d.receivedAmount = Math.min(d.orderAmount, d.receivedAmount + codPaid); d.collectOnDelivery = Math.max(0, d.orderAmount - d.receivedAmount); }
+    if (d.vehicleId) { const v = getVeh(d.vehicleId); v.status = 'Available'; v.currentDel = ''; }
+    navigate('delivery-success', { key: 'delId', val: d.id });
+  } else if (act === 'save-exp') {
+    const d = getDel(btn.dataset.id);
+    d.expenses.push({ type: document.getElementById('exType')?.value || 'Other', amount: Number(document.getElementById('exAmt')?.value) || 0, date: todayStr(), paidBy: 'Company', status: document.getElementById('exStat')?.value || 'Paid' });
+    navigate('expense-details', { key: 'delId', val: d.id }); showToast('Delivery expense added');
+  } else if (act === 'save-tp') {
+    const d = getDel(btn.dataset.id); d.expenses.forEach((e) => { e.status = 'Paid'; });
+    navigate('expense-details', { key: 'delId', val: d.id }); showToast('Transport payment recorded');
+  } else if (act === 'open-notif') {
+    const n = state.notifications.find((x) => x.id === btn.dataset.id);
+    if (n) { n.unread = false; navigate(n.screen, n.key ? { key: n.key, val: n.val } : {}); }
+  } else if (act === 'mark-all-read') { state.notifications.forEach((n) => { n.unread = false; }); renderAll(); showToast('All notifications marked read'); }
+  else if (act === 'set-ui-state') { state.uiStateDemo = btn.dataset.val; renderAll(); }
+});
+
+renderAll();
+</script>
+</body>
+</html>

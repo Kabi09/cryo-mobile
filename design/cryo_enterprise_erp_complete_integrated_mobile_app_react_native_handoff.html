@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cryo Enterprise ERP – Complete Integrated Mobile App & React Native Handoff</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --navy:#1E3A8A; --royal:#1D4ED8; --bg:#F8FAFC; --card:#FFFFFF; --border:#E2E8F0; --text:#0F172A; }
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; background: #EEF2F6; color: var(--text); overflow-x: hidden; }
+    .phone-shell {
+      width: 390px; max-width: 100%; height: 820px; max-height: calc(100vh - 76px);
+      background: var(--bg); border-radius: 36px; border: 8px solid #0F172A;
+      box-shadow: 0 24px 60px -15px rgba(15, 23, 42, 0.28);
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    @media (max-width: 520px) {
+      .phone-shell { width: 100%; height: calc(100vh - 56px); max-height: none; border-radius: 0; border: none; box-shadow: none; }
+    }
+    .phone-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .phone-scroll::-webkit-scrollbar { width: 4px; }
+    .phone-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: flex-end; z-index: 40; animation: fadeIn 0.16s ease-out; }
+    .sheet-panel { width: 100%; max-height: 85%; background: #FFF; border-top-left-radius: 20px; border-top-right-radius: 20px; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(24px); opacity: 0.9; } to { transform: translateY(0); opacity: 1; } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .toast-bar { position: absolute; top: 46px; left: 14px; right: 14px; z-index: 60; animation: fadeIn 0.16s ease-out; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Integrated Toolbar -->
+  <header class="bg-white border-b border-slate-200 px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button id="toggleSidebarBtn" type="button" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Toggle menu">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm shrink-0">C</div>
+      <div class="min-w-0">
+        <div class="font-semibold text-sm text-slate-900 truncate">Cryo Enterprise ERP – Integrated Mobile Suite</div>
+        <div class="text-[11px] text-slate-500 truncate hidden sm:block">6 Connected Modules • Live Shared Database • React Native Handoff</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Permission Persona Switcher (Section 9) -->
+      <select id="personaSelect" aria-label="Test Permission Persona" class="px-2 py-1 text-xs font-medium bg-blue-50 border border-blue-200 rounded-lg text-[#1E3A8A] focus:outline-none">
+        <option value="admin">Admin (All 5 Depts)</option>
+        <option value="multi">Arun (Sales + Prod View)</option>
+        <option value="single">Murugan (Supply Chain)</option>
+        <option value="viewonly">Viewer (Read-Only)</option>
+        <option value="nowf">Draft User (No Workflow)</option>
+      </select>
+
+      <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+        <button id="modePhoneBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">App</span></button>
+        <button id="modeFlowBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="git-branch" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Workflow</span></button>
+        <button id="modeHandoffBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="code-2" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Dev Handoff</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 flex relative overflow-hidden">
+    <!-- Left Unified Module & Journey Navigator -->
+    <aside id="screenSidebar" class="fixed lg:static inset-y-14 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="p-3 border-b border-slate-200 space-y-2">
+        <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+          <button id="sbModeJourneyBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">E2E Journey</button>
+          <button id="sbModeModulesBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">All Modules</button>
+        </div>
+      </div>
+      <div id="sidebarList" class="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-3"></div>
+    </aside>
+    <div id="sidebarOverlay" class="fixed inset-0 top-14 bg-slate-900/30 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 overflow-y-auto flex items-start justify-center p-0 sm:p-4 lg:p-5">
+      <div id="phoneContainer" class="flex flex-col items-center w-full">
+        <div class="phone-shell">
+          <div class="h-7 px-5 bg-white flex items-center justify-between text-[11px] font-semibold text-slate-800 shrink-0 select-none border-b border-slate-100">
+            <span>13:45</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full hidden sm:block"></div>
+            <div class="flex items-center gap-1.5 text-slate-700"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></div>
+          </div>
+          <div id="phoneToast" class="toast-bar hidden"></div>
+          <div id="screenRoot" class="flex-1 flex flex-col min-h-0 relative"></div>
+          <div id="sheetRoot" class="hidden"></div>
+        </div>
+        <div id="screenFooterMeta" class="hidden sm:flex items-center gap-2 mt-2.5 text-xs text-slate-500"></div>
+      </div>
+
+      <div id="workflowContainer" class="hidden w-full max-w-5xl mx-auto pb-8"></div>
+      <div id="handoffContainer" class="hidden w-full max-w-6xl mx-auto pb-8"></div>
+    </main>
+  </div>
+
+<script>
+/* ==========================================================================
+   CRYO ENTERPRISE ERP – COMPLETE INTEGRATED MOBILE APPLICATION
+   One Shared Database • 6 Unified Modules • Live Permission Engine • RN Handoff
+   ========================================================================== */
+
+const PERSONAS = {
+  admin: {
+    id: 'EMP-ADM-001', name: 'Priya Nair', email: 'admin@cryoerp.com', label: 'Full Admin Access',
+    isAdmin: true, depts: ['sales', 'production', 'supply-chain', 'logistics', 'employees'],
+    perms: { sales: { view: true, create: true, edit: true, workflow: true }, production: { view: true, create: true, edit: true, workflow: true }, 'supply-chain': { view: true, create: true, edit: true, workflow: true }, logistics: { view: true, create: true, edit: true, workflow: true }, employees: { view: true, create: true, edit: true, workflow: true } }
+  },
+  multi: {
+    id: 'EMP-001', name: 'Arun Kumar', email: 'arun@example.com', label: 'Sales (Std) + Prod (View Only)',
+    isAdmin: false, depts: ['sales', 'production'],
+    perms: { sales: { view: true, create: true, edit: true, workflow: true }, production: { view: true, create: false, edit: false, workflow: false } }
+  },
+  single: {
+    id: 'EMP-SC-308', name: 'Murugan S', email: 'murugan@cryoerp.com', label: 'Single Dept (Supply Chain)',
+    isAdmin: false, depts: ['supply-chain'],
+    perms: { 'supply-chain': { view: true, create: true, edit: true, workflow: true } }
+  },
+  viewonly: {
+    id: 'EMP-VW-009', name: 'Ramesh Viewer', email: 'viewer@cryoerp.com', label: 'View-Only Employee',
+    isAdmin: false, depts: ['sales', 'production'],
+    perms: { sales: { view: true, create: false, edit: false, workflow: false }, production: { view: true, create: false, edit: false, workflow: false } }
+  },
+  nowf: {
+    id: 'EMP-DR-012', name: 'Kavya Drafts', email: 'kavya@cryoerp.com', label: 'Create/Edit Only (No Workflow)',
+    isAdmin: false, depts: ['sales'],
+    perms: { sales: { view: true, create: true, edit: true, workflow: false } }
+  }
+};
+
+const DEPT_META = {
+  admin: { name: 'Admin Management', short: 'Admin', icon: 'shield', home: 'admin-dashboard' },
+  sales: { name: 'Sales Management', short: 'Sales', icon: 'briefcase', home: 'sales-dashboard' },
+  production: { name: 'Production Management', short: 'Production', icon: 'factory', home: 'prod-dashboard' },
+  'supply-chain': { name: 'Supply Chain Management', short: 'Supply Chain', icon: 'boxes', home: 'scm-dashboard' },
+  logistics: { name: 'Logistics & Delivery', short: 'Logistics', icon: 'truck', home: 'log-dashboard' },
+  employees: { name: 'Employee & Permissions', short: 'Employees', icon: 'users', home: 'emp-dashboard' }
+};
+
+/* ---------- ONE SHARED LIVE ERP DATABASE (Section 11 Continuity) ---------- */
+const db = {
+  viewMode: 'phone', // 'phone' | 'workflow' | 'handoff'
+  sidebarMode: 'journey',
+  personaKey: 'admin',
+  activeDept: 'admin',
+  screen: 'admin-dashboard',
+  history: [],
+  activeSheet: null,
+
+  // Master Data (Shared everywhere)
+  customers: [
+    { id: 'CUST-001', name: 'ABC Laboratory', contact: 'Dr. Ramesh Babu', phone: '+91 98402 55110', email: 'ramesh@abclab.in', address: 'Guindy Industrial Estate, Chennai, Tamil Nadu' },
+    { id: 'CUST-002', name: 'Apex Pharma Labs', contact: 'Rajesh Kulkarni', phone: '+91 98201 44512', email: 'rk@apexpharma.in', address: 'Peenya Phase II, Bengaluru' }
+  ],
+  products: [
+    { id: 'PRD-001', code: 'CRYO-DF80', name: 'Deep Freezer (-80°C)', model: 'DF80-340L', price: 75000 },
+    { id: 'PRD-002', code: 'CRYO-INC200', name: 'Laboratory Incubator', model: 'INC-200D', price: 95000 },
+    { id: 'PRD-003', code: 'CRYO-WB18', name: 'Digital Water Bath', model: 'WB-18SS', price: 28500 }
+  ],
+  materials: [
+    { id: 'MAT-01', code: 'RM-101', name: 'Compressor', unit: 'Pieces', stock: 2, minStock: 2 },
+    { id: 'MAT-02', code: 'RM-102', name: 'Steel Sheet', unit: 'Sheets', stock: 5, minStock: 6 },
+    { id: 'MAT-03', code: 'RM-103', name: 'Temperature Controller', unit: 'Pieces', stock: 0, minStock: 4 }
+  ],
+  suppliers: [{ id: 'SUP-01', name: 'ABC Industrial Supplies', phone: '+91 98405 11223' }],
+  vehicles: [{ id: 'VEH-01', regNo: 'TN 01 AB 1234', type: 'Mini Truck', status: 'Available' }],
+  providers: [{ id: 'PROV-01', name: 'Sample Road Transport', type: 'Road Transport', phone: '+91 98409 22110' }],
+
+  // Live Connected Order Lifecycle (SO-001 — mutates live across ALL 6 departments!)
+  order: {
+    enqId: 'ENQ-001', enqStatus: 'Qualified',
+    qtId: 'QT-001', qtVersion: 2, qtStatus: 'Accepted', qtNegotiated: true,
+    piId: 'PI-001', cpoId: 'CPO-001', soId: 'SO-001',
+    customer: 'ABC Laboratory', product: 'Deep Freezer (-80°C)', qty: 2,
+    orderValue: 150000, receivedAmount: 100000, paymentArrangement: 'Collect balance on delivery',
+    proId: 'PRO-001', proStatus: 'Waiting for Materials', bomId: 'BOM-001', bomConfirmed: true,
+    mrId: 'MR-001', mrStatus: 'Partially Issued',
+    mi1Issued: true, mi2Issued: false,
+    poId: 'PO-001', poStatus: 'Confirmed',
+    grnId: 'GRN-001', grnConfirmed: false,
+    prodProgress: 40, qcStatus: 'Pending',
+    delId: 'DEL-001', pkgId: 'PKG-001', dcId: 'DC-001', delMethod: 'Own Vehicle',
+    delStatus: 'Not Planned', podRecorded: false,
+    completedStageNum: 12 // Advances live up to 22 as user clicks actions!
+  },
+
+  approvals: [
+    { id: 'APR-01', type: 'Quotation Discount (12%)', ref: 'QT-005', dept: 'Sales', by: 'Arun Kumar', status: 'Pending' },
+    { id: 'APR-02', type: 'New Material Master Request', ref: 'NMA-01', dept: 'Supply Chain', by: 'Deepak Raj', status: 'Pending' }
+  ],
+
+  logs: [
+    { time: '10:15 AM', dept: 'Sales', text: 'QT-001 (v2) accepted after negotiation → SO-001 confirmed' },
+    { time: '11:00 AM', dept: 'Production', text: 'PRO-001 created with BOM-001 → MR-001 sent to Supply Chain' },
+    { time: '11:45 AM', dept: 'Supply Chain', text: 'MI-001 partial issue (Compressor 2, Steel 5) & PO-001 created' }
+  ]
+};
+
+/* ---------- PERMISSION ENGINE ---------- */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const fmtINR = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const curUser = () => PERSONAS[db.personaKey];
+
+function canAccessDept(deptKey) {
+  if (deptKey === 'admin') return curUser().isAdmin;
+  return curUser().depts.includes(deptKey);
+}
+function canAct(deptKey, action) {
+  const u = curUser();
+  if (u.isAdmin) return true;
+  return !!(u.perms[deptKey] && u.perms[deptKey][action]);
+}
+function logEvent(dept, text) {
+  db.logs.unshift({ time: 'Just now', dept, text });
+}
+
+function badgeHTML(status) {
+  const map = {
+    'Qualified': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Accepted': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Waiting for Materials': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Materials Ready': 'bg-teal-50 text-teal-700 border-teal-200',
+    'In Production': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Quality Check': 'bg-purple-50 text-purple-700 border-purple-200',
+    'Completed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Partially Issued': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Fully Issued': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+    'In Transit': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Paid': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Partially Paid': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Pending': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Approved': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Rejected': 'bg-rose-50 text-rose-700 border-rose-200',
+    'View Only': 'bg-slate-100 text-slate-600 border-slate-200'
+  };
+  return `<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full border ${map[status] || 'bg-slate-100 text-slate-700 border-slate-200'} whitespace-nowrap">${esc(status)}</span>`;
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('phoneToast');
+  if (!el) return;
+  const cls = type === 'error' ? 'bg-rose-600 text-white' : type === 'warning' ? 'bg-amber-600 text-white' : 'bg-[#1E3A8A] text-white';
+  el.className = `toast-bar rounded-xl px-3.5 py-2.5 text-xs font-medium shadow-lg flex items-center gap-2 ${cls}`;
+  el.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 shrink-0"></i><span class="flex-1">${esc(msg)}</span>`;
+  el.classList.remove('hidden');
+  lucide.createIcons({ nodes: [el] });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+function goScreen(screenId, deptOverride = null) {
+  const inferredDept = deptOverride || (
+    screenId.startsWith('sales-') ? 'sales' :
+    screenId.startsWith('prod-') ? 'production' :
+    screenId.startsWith('scm-') ? 'supply-chain' :
+    screenId.startsWith('log-') ? 'logistics' :
+    screenId.startsWith('emp-') ? 'employees' :
+    screenId.startsWith('admin-') ? 'admin' : db.activeDept
+  );
+
+  // Enforce permission check on department entry (Section 9)
+  const isAuthScreen = screenId.startsWith('auth-');
+  if (!isAuthScreen && !canAccessDept(inferredDept)) {
+    db.screen = 'auth-restricted';
+    db.viewMode = 'phone';
+    renderAll();
+    showToast(`Access restricted for ${curUser().name}`, 'error');
+    return;
+  }
+
+  if (!isAuthScreen) db.activeDept = inferredDept;
+  if (db.screen !== screenId) { db.history.push(db.screen); if (db.history.length > 25) db.history.shift(); }
+  db.activeSheet = null;
+  db.screen = screenId;
+  db.viewMode = 'phone';
+  renderAll();
+}
+
+function goBack() {
+  db.activeSheet = null;
+  db.screen = db.history.length ? db.history.pop() : (curUser().isAdmin ? 'admin-dashboard' : DEPT_META[curUser().depts[0]].home);
+  renderAll();
+}
+
+/* ---------- UNIFIED CHROME (Single Bottom Nav + Admin Return Bar) ---------- */
+function renderDeptReturnBar() {
+  if (db.activeDept === 'admin') return '';
+  const u = curUser();
+  return `
+    <div class="bg-[#1E3A8A] text-white px-3.5 py-1.5 flex items-center justify-between text-[11px] shrink-0">
+      ${u.isAdmin
+        ? `<button type="button" data-go="admin-dashboard" class="flex items-center gap-1 font-semibold hover:underline"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Return to Admin</button>`
+        : `<span class="font-medium truncate">${esc(DEPT_META[db.activeDept].name)}</span>`
+      }
+      ${(u.isAdmin || u.depts.length > 1) ? `<button type="button" data-action="open-dept-switcher" class="px-2 py-0.5 rounded bg-white/15 font-semibold">Switch Dept ▾</button>` : `<span class="opacity-75">${esc(u.name.split(' ')[0])}</span>`}
+    </div>`;
+}
+
+function renderHeader(title, opts = {}) {
+  const back = opts.back ? `<button type="button" data-action="go-back" class="p-1.5 -ml-1.5 rounded-lg text-slate-700 hover:bg-slate-100"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '';
+  return `
+    ${opts.hideReturnBar ? '' : renderDeptReturnBar()}
+    <div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 shrink-0">
+      <div class="flex items-center gap-2 min-w-0">${back}<h1 class="text-[15px] font-semibold text-slate-900 truncate">${esc(title)}</h1></div>
+      <div class="flex items-center gap-1.5 shrink-0">${opts.right || ''}</div>
+    </div>`;
+}
+
+function renderBottomNav(dept, activeKey) {
+  const navConfig = {
+    admin: [['home', 'Home', 'home', 'admin-dashboard'], ['depts', 'Depts', 'layout-grid', 'admin-depts'], ['orders', 'Orders', 'package', 'admin-journey'], ['reports', 'Reports', 'bar-chart-3', 'admin-reports'], ['more', 'More', 'menu', 'admin-approvals']],
+    sales: [['home', 'Home', 'home', 'sales-dashboard'], ['enq', 'Enquiries', 'clipboard-list', 'sales-enquiry'], ['qt', 'Quotes', 'file-text', 'sales-quotation'], ['so', 'Orders', 'package-check', 'sales-order'], ['more', 'More', 'grid', 'auth-dept-select']],
+    production: [['home', 'Home', 'home', 'prod-dashboard'], ['orders', 'Orders', 'clipboard-list', 'prod-order'], ['mat', 'BOM/Mat', 'layers', 'prod-bom'], ['qc', 'Build/QC', 'shield-check', 'prod-qc'], ['more', 'More', 'grid', 'auth-dept-select']],
+    'supply-chain': [['home', 'Home', 'home', 'scm-dashboard'], ['req', 'Requests', 'clipboard-list', 'scm-stock'], ['inv', 'Inventory', 'boxes', 'scm-inventory'], ['po', 'PO / GRN', 'shopping-cart', 'scm-grn'], ['more', 'More', 'grid', 'auth-dept-select']],
+    logistics: [['home', 'Home', 'home', 'log-dashboard'], ['plan', 'Plan', 'calendar', 'log-plan'], ['disp', 'Dispatch', 'truck', 'log-dispatch'], ['pod', 'POD', 'check-circle-2', 'log-pod'], ['more', 'More', 'grid', 'auth-dept-select']],
+    employees: [['home', 'Home', 'home', 'emp-dashboard'], ['emp', 'Staff', 'users', 'emp-list'], ['perm', 'Matrix', 'shield-check', 'emp-matrix'], ['login', 'Login', 'log-in', 'auth-login'], ['more', 'More', 'grid', 'admin-dashboard']]
+  };
+  const items = navConfig[dept] || navConfig.admin;
+  return `<nav class="bg-white border-t border-slate-200 px-1 pt-1.5 pb-2 grid grid-cols-5 shrink-0">${items.map(([k, lbl, ic, sc]) => `<button type="button" data-go="${sc}" class="flex flex-col items-center justify-center gap-0.5 py-0.5 rounded-lg ${k === activeKey ? 'text-[#1E3A8A] font-semibold' : 'text-slate-500 hover:text-slate-800'}"><i data-lucide="${ic}" class="w-4.5 h-4.5 ${k === activeKey ? 'stroke-[2.3]' : ''}"></i><span class="text-[10px]">${lbl}</span></button>`).join('')}</nav>`;
+}
+
+/* ==========================================================================
+   COMMON AUTHENTICATION SCREENS (SECTION 3)
+   ========================================================================== */
+function renderSplash() {
+  return `<div class="flex-1 bg-[#1E3A8A] text-white flex flex-col items-center justify-center p-6 text-center space-y-4">
+    <div class="w-16 h-16 rounded-2xl bg-white text-[#1E3A8A] font-bold text-3xl flex items-center justify-center shadow-lg">C</div>
+    <div><div class="text-xl font-bold tracking-tight">Cryo Enterprise ERP</div><div class="text-xs text-blue-200 mt-1">Scientific & Laboratory Equipment Suite</div></div>
+    <button type="button" data-go="auth-login" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-[#1E3A8A] text-xs font-bold shadow">Continue to Login →</button>
+  </div>`;
+}
+
+function renderAuthLogin() {
+  return `<div class="phone-scroll p-5 flex flex-col justify-center space-y-4 bg-white">
+    <div class="text-center space-y-1"><div class="w-11 h-11 rounded-2xl bg-[#1E3A8A] text-white font-bold text-lg flex items-center justify-center mx-auto">C</div><h1 class="text-base font-bold text-slate-900">Common Cryo ERP Login</h1><p class="text-[11px] text-slate-500">One login loads your authorized departments & permissions</p></div>
+    <div class="space-y-2.5 text-xs">
+      <div><label class="block font-medium mb-1">Email</label><input type="email" value="${esc(curUser().email)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl" /></div>
+      <div><label class="block font-medium mb-1">Password</label><input type="password" value="••••••••••" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl" /></div>
+      <div class="flex justify-between text-[11px]"><button type="button" data-go="auth-first-pwd" class="text-slate-500">First-Login Reset</button><button type="button" data-go="auth-forgot" class="text-[#1D4ED8] font-medium">Forgot Password?</button></div>
+      <button type="button" data-action="do-login" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold text-sm">Sign In as ${esc(curUser().name.split(' ')[0])}</button>
+    </div>
+    <div class="border-t pt-3 space-y-1.5">
+      <div class="text-[10px] font-bold uppercase text-slate-400">Quick-Test Auth States</div>
+      <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+        <button type="button" data-go="auth-inactive" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-medium">Account Inactive</button>
+        <button type="button" data-go="auth-expired" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-medium">Session Expired</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAuthDeptSelect() {
+  const u = curUser();
+  return `${renderHeader('Select Department', { hideReturnBar: true, right: `<button type="button" data-go="auth-login" class="text-xs font-semibold text-rose-600">Logout</button>` })}<div class="phone-scroll p-4 space-y-3"><div class="text-xs text-slate-600">Welcome, <strong>${esc(u.name)}</strong> (${esc(u.label)}). Select an authorized workspace:</div>${u.isAdmin ? `<button type="button" data-go="admin-dashboard" class="w-full bg-[#1E3A8A] text-white rounded-2xl p-3.5 flex justify-between items-center text-left"><div><div class="text-sm font-bold">Centralized Admin Dashboard</div><div class="text-[11px] text-blue-200">Full access to all 5 departments</div></div><i data-lucide="arrow-right" class="w-4 h-4"></i></button>` : ''}${u.depts.map((dk) => `<button type="button" data-go="${DEPT_META[dk].home}" class="w-full bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-2xl p-3.5 flex items-center justify-between text-left"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${DEPT_META[dk].icon}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold text-slate-900">${esc(DEPT_META[dk].name)}</div><div class="text-[11px] text-[#1D4ED8]">${canAct(dk, 'edit') ? 'Standard / Full Access' : 'View Only'}</div></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div>`;
+}
+
+function renderAuthStateCard(icon, cls, title, desc, btnLbl, btnGo) {
+  return `${renderHeader(title, { back: true, hideReturnBar: true })}<div class="phone-scroll p-5 flex flex-col justify-center"><div class="bg-white border border-slate-200 rounded-2xl p-6 text-center space-y-2.5"><i data-lucide="${icon}" class="w-11 h-11 ${cls} mx-auto"></i><div class="text-base font-bold text-slate-900">${title}</div><div class="text-xs text-slate-600">${desc}</div><button type="button" data-go="${btnGo}" class="mt-2 w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${btnLbl}</button></div></div>`;
+}
+
+/* ==========================================================================
+   ADMIN SCREENS
+   ========================================================================== */
+function renderAdminDashboard() {
+  const o = db.order;
+  const bal = Math.max(0, o.orderValue - o.receivedAmount);
+  return `
+    <div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+      <div><button type="button" data-action="open-dept-switcher" class="text-[11px] font-semibold text-[#1D4ED8] uppercase flex items-center gap-1"><span>Cryo ERP • Admin</span><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button><div class="text-sm font-bold text-slate-900">Centralized Management</div></div>
+      <div class="flex items-center gap-1.5"><button type="button" data-go="admin-approvals" class="px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold">${db.approvals.filter((a) => a.status === 'Pending').length} Approvals</button><button type="button" data-go="auth-login" class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold flex items-center justify-center" title="Logout">PN</button></div>
+    </div>
+    <div class="phone-scroll p-3.5 space-y-3.5">
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5"><div class="text-[10px] text-slate-500">SO-001 Order Value</div><div class="text-base font-bold text-[#1E3A8A]">${fmtINR(o.orderValue)}</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5"><div class="text-[10px] text-slate-500">Customer Balance</div><div class="text-base font-bold ${bal > 0 ? 'text-amber-700' : 'text-emerald-700'}">${fmtINR(bal)}</div></div>
+      </div>
+
+      <!-- Live Linked SO-001 Banner -->
+      <button type="button" data-go="admin-journey" class="w-full text-left bg-blue-50/80 border border-blue-200 rounded-xl p-3 space-y-1.5 hover:border-[#1D4ED8]">
+        <div class="flex justify-between items-center"><span class="text-xs font-bold text-[#1E3A8A]">Live Order: SO-001 (Stage ${o.completedStageNum}/22)</span>${badgeHTML(o.podRecorded ? 'Delivered' : o.proStatus)}</div>
+        <div class="text-xs text-slate-700">ABC Laboratory • Deep Freezer × 2 • Paid ${fmtINR(o.receivedAmount)}</div>
+        <div class="w-full h-1.5 bg-white rounded-full overflow-hidden"><div class="h-full bg-[#1E3A8A]" style="width:${Math.round((o.completedStageNum / 22) * 100)}%"></div></div>
+      </button>
+
+      <!-- All 5 Department Launchers -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase mb-2">Open Any Department (Full Access)</div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          ${['sales', 'production', 'supply-chain', 'logistics', 'employees'].map((dk) => `<button type="button" data-go="${DEPT_META[dk].home}" class="bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3 flex items-center gap-2.5 text-left"><div class="w-8 h-8 rounded-lg bg-blue-50 text-[#1E3A8A] flex items-center justify-center shrink-0"><i data-lucide="${DEPT_META[dk].icon}" class="w-4 h-4"></i></div><span class="font-semibold text-slate-900">${DEPT_META[dk].short}</span></button>`).join('')}
+          <button type="button" data-go="admin-reports" class="bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3 flex items-center gap-2.5 text-left"><div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div><span class="font-semibold text-slate-900">Reports</span></button>
+        </div>
+      </div>
+
+      <!-- Live Cross-Dept Audit Trail -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase mb-1.5">Live ERP Activity</div>
+        <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-[11px]">
+          ${db.logs.slice(0, 4).map((l) => `<div class="px-3 py-2"><span class="font-semibold text-[#1D4ED8]">${esc(l.dept)}</span> • ${esc(l.text)}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    ${renderBottomNav('admin', 'home')}
+  `;
+}
+
+function renderAdminJourney() {
+  const o = db.order;
+  const stages = [
+    [1, 'Sales: Enquiry → Qualified', o.enqId, 'sales-enquiry'],
+    [5, 'Sales: Quotation (v2 Negotiated) → Accepted', o.qtId, 'sales-quotation'],
+    [8, 'Sales: PI → CPO → Sales Order Confirmed', o.soId, 'sales-order'],
+    [10, 'Production: PRO-001 & BOM-001 Confirmed', o.proId, 'prod-bom'],
+    [12, 'Supply Chain: Stock Check & MI-001 Partial Issue', o.mrId, 'scm-stock'],
+    [14, 'Supply Chain: PO-001 → GRN-001 → MI-002 Full Issue', o.grnId, 'scm-grn'],
+    [16, 'Production: Daily Build & Quality Check Passed', o.proId, 'prod-qc'],
+    [19, 'Logistics: Delivery Plan, Packing & Challan', o.delId, 'log-plan'],
+    [20, 'Logistics: Dispatch (Own Vehicle TN 01 AB 1234)', o.dcId, 'log-dispatch'],
+    [22, 'Logistics: POD Signed & ₹50,000 COD Collected', o.delId, 'log-pod']
+  ];
+  return `${renderHeader('Complete Order Journey: SO-001', { back: true })}<div class="phone-scroll p-3.5 space-y-2.5">${stages.map(([st, lbl, ref, sc]) => {
+    const done = st <= o.completedStageNum;
+    return `<button type="button" data-go="${sc}" class="w-full text-left bg-white border ${done ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'} hover:border-[#1D4ED8] rounded-xl p-3 flex items-center justify-between text-xs"><div class="flex items-center gap-2.5"><span class="w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${done ? 'bg-emerald-600 text-white' : 'bg-blue-50 text-[#1E3A8A]'}">${done ? '✓' : st}</span><div><div class="font-semibold text-slate-900">${lbl}</div><div class="text-[11px] text-[#1D4ED8]">${esc(ref)} • Tap to open screen</div></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`;
+  }).join('')}</div>${renderBottomNav('admin', 'orders')}`;
+}
+
+function renderAdminApprovals() {
+  return `${renderHeader('Pending Approvals', { back: true })}<div class="phone-scroll p-3.5 space-y-2.5">${db.approvals.map((a) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="font-semibold text-[#1D4ED8]">${esc(a.type)}</div><div class="text-slate-600">${esc(a.ref)} • ${esc(a.dept)} • By ${esc(a.by)}</div></div>${badgeHTML(a.status)}</div>${a.status === 'Pending' ? `<div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-action="apr" data-id="${a.id}" data-val="Rejected" class="py-1.5 rounded-lg bg-rose-50 text-rose-700 font-semibold">Reject</button><button type="button" data-action="apr" data-id="${a.id}" data-val="Approved" class="py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">Approve</button></div>` : ''}</div>`).join('')}</div>${renderBottomNav('admin', 'more')}`;
+}
+
+function renderAdminReports() {
+  const o = db.order;
+  return `${renderHeader('Centralized Reports', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="grid grid-cols-2 gap-2"><div class="bg-white border rounded-xl p-3"><div class="text-[10px] text-slate-500">Sales Order Value</div><div class="text-sm font-bold text-[#1E3A8A]">${fmtINR(o.orderValue)}</div></div><div class="bg-white border rounded-xl p-3"><div class="text-[10px] text-slate-500">Cash Received</div><div class="text-sm font-bold text-emerald-700">${fmtINR(o.receivedAmount)}</div></div><div class="bg-white border rounded-xl p-3"><div class="text-[10px] text-slate-500">Low/Out Stock</div><div class="text-sm font-bold text-amber-700">${db.materials.filter((m) => m.stock < m.minStock).length}</div></div><div class="bg-white border rounded-xl p-3"><div class="text-[10px] text-slate-500">Order Progress</div><div class="text-sm font-bold text-[#1E3A8A]">${Math.round((o.completedStageNum / 22) * 100)}%</div></div></div><div class="bg-slate-100 rounded-xl p-3 text-[11px] text-slate-600">All 7 reports (Sales, Production, Inventory, Purchase, Logistics, Payments, Order Status) pull from the exact same live database with zero double-counting.</div></div>${renderBottomNav('admin', 'reports')}`;
+}
+
+/* ==========================================================================
+   DEPARTMENT MODULES (CONNECTED TO SHARED LIVE DATABASE + PERMISSION GATES)
+   ========================================================================== */
+
+// SALES MODULE
+function renderSalesDashboard() {
+  const o = db.order;
+  const canCreate = canAct('sales', 'create');
+  return `${renderHeader('Sales Dashboard', { right: !canCreate ? badgeHTML('View Only') : '' })}<div class="phone-scroll p-3.5 space-y-3 text-xs">
+    ${canCreate ? `<div class="grid grid-cols-2 gap-2"><button type="button" data-go="sales-enquiry" class="py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">+ New Enquiry</button><button type="button" data-go="sales-quotation" class="py-2.5 rounded-xl bg-white border border-slate-200 font-semibold text-slate-800">Quotations</button></div>` : `<div class="bg-slate-100 rounded-xl p-2.5 text-slate-600">View-Only Access: Create & Edit actions are hidden.</div>`}
+    <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2"><div class="flex justify-between"><strong class="text-[#1D4ED8]">${o.soId} • ${esc(o.customer)}</strong>${badgeHTML(o.podRecorded ? 'Delivered' : o.proStatus)}</div><div>${esc(o.product)} × ${o.qty} • ${fmtINR(o.orderValue)} (Paid: ${fmtINR(o.receivedAmount)})</div><button type="button" data-go="sales-order" class="w-full py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">Open Sales Order →</button></div>
+  </div>${renderBottomNav('sales', 'home')}`;
+}
+function renderSalesEnquiry() {
+  const canCreate = canAct('sales', 'create');
+  return `${renderHeader('Enquiries (Sales)', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3 space-y-1.5"><div class="flex justify-between"><strong class="text-[#1D4ED8]">ENQ-001 • ABC Laboratory</strong>${badgeHTML('Qualified')}</div><div>Deep Freezer (-80°C) × 2 units</div>${canCreate ? `<button type="button" data-go="sales-quotation" class="w-full py-2 mt-1 rounded-lg bg-[#1E3A8A] text-white font-semibold">Next: View Quotation QT-001 →</button>` : ''}</div>${canCreate ? `<button type="button" data-action="add-inline-cust" class="w-full py-2.5 rounded-xl border border-dashed border-[#1D4ED8] text-[#1D4ED8] font-semibold">+ Quick Add Customer to Shared Master (${db.customers.length})</button>` : ''}</div>${renderBottomNav('sales', 'enq')}`;
+}
+function renderSalesQuotation() {
+  const o = db.order;
+  const canWf = canAct('sales', 'workflow');
+  return `${renderHeader(`Quotation ${o.qtId} (v${o.qtVersion})`, { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(o.customer)}</strong>${badgeHTML(o.qtStatus)}</div><div>${esc(o.product)} × ${o.qty} • Negotiated Final Total: <strong>${fmtINR(o.orderValue)}</strong></div><div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-emerald-800">v1 → Negotiated → Revised v2 → Accepted → PI-001 → CPO-001 → SO-001</div></div>${canWf ? `<button type="button" data-go="sales-order" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Next: View Confirmed SO-001 →</button>` : `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-800">Workflow actions (Send / Accept) are hidden for your permission level.</div>`}</div>${renderBottomNav('sales', 'qt')}`;
+}
+function renderSalesOrder() {
+  const o = db.order;
+  return `${renderHeader(`Sales Order ${o.soId}`, { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(o.customer)}</strong>${badgeHTML(o.podRecorded ? 'Delivered' : o.proStatus)}</div><div>${esc(o.product)} × ${o.qty} • Total: <strong>${fmtINR(o.orderValue)}</strong></div><div>Received: <strong class="text-emerald-700">${fmtINR(o.receivedAmount)}</strong> • Balance: <strong class="text-amber-700">${fmtINR(Math.max(0, o.orderValue - o.receivedAmount))}</strong></div><div class="bg-slate-50 rounded-lg p-2 text-slate-600">Read-Only Production Sync: <strong>${esc(o.proId)} (${esc(o.proStatus)})</strong></div></div>${canAccessDept('production') ? `<button type="button" data-go="prod-order" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Open Linked PRO-001 in Production →</button>` : ''}</div>${renderBottomNav('sales', 'so')}`;
+}
+
+// PRODUCTION MODULE
+function renderProdDashboard() {
+  const o = db.order;
+  const canEdit = canAct('production', 'edit');
+  return `${renderHeader('Production Dashboard', { right: !canEdit ? badgeHTML('View Only') : '' })}<div class="phone-scroll p-3.5 space-y-3 text-xs">${!canEdit ? `<div class="bg-slate-100 rounded-xl p-2.5 text-slate-600">View-Only Access in Production (e.g., Arun Kumar). Action buttons are hidden.</div>` : ''}<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-[#1D4ED8]">${o.proId} • ${esc(o.product)} (×${o.qty})</strong>${badgeHTML(o.proStatus)}</div><div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-[#1E3A8A]" style="width:${o.prodProgress}%"></div></div><div class="flex justify-between text-[11px] text-slate-500"><span>Progress: ${o.prodProgress}%</span><span>QC: ${esc(o.qcStatus)}</span></div><button type="button" data-go="prod-order" class="w-full py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">Open PRO-001 →</button></div></div>${renderBottomNav('production', 'home')}`;
+}
+function renderProdOrder() {
+  const o = db.order;
+  const canWf = canAct('production', 'workflow');
+  return `${renderHeader(`Production Order ${o.proId}`, { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(o.product)} × ${o.qty}</strong>${badgeHTML(o.proStatus)}</div><div>Sales Order: ${o.soId} (${esc(o.customer)}) • BOM: ${o.bomId} • MR: ${o.mrId} (${esc(o.mrStatus)})</div></div>${canWf ? (o.mrStatus !== 'Fully Issued' ? `<button type="button" data-go="scm-grn" class="w-full py-2.5 rounded-xl bg-amber-600 text-white font-semibold">Next: Receive GRN-001 & Issue Remaining in SCM →</button>` : `<button type="button" data-go="prod-qc" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Next: Complete Build & Run Quality Check →</button>`) : ''}</div>${renderBottomNav('production', 'orders')}`;
+}
+function renderProdBOM() {
+  return `${renderHeader('BOM-001 (Deep Freezer × 2)', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 border-b text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Per Unit</th><th class="py-2 px-3 text-right">Total (×2)</th></tr></thead><tbody class="divide-y divide-slate-100"><tr><td class="py-2 px-3 font-medium">Compressor</td><td class="py-2 px-2 text-center">1</td><td class="py-2 px-3 text-right font-bold">2 Pieces</td></tr><tr><td class="py-2 px-3 font-medium">Steel Sheet</td><td class="py-2 px-2 text-center">4</td><td class="py-2 px-3 text-right font-bold">8 Sheets</td></tr><tr><td class="py-2 px-3 font-medium">Temp Controller</td><td class="py-2 px-2 text-center">1</td><td class="py-2 px-3 text-right font-bold">2 Pieces</td></tr></tbody></table></div></div>${renderBottomNav('production', 'mat')}`;
+}
+function renderProdQC() {
+  const o = db.order;
+  const canWf = canAct('production', 'workflow');
+  return `${renderHeader('Build & Quality Check', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">${o.proId} • ${esc(o.product)}</strong>${badgeHTML(o.qcStatus)}</div><div>Build Progress: <strong>${o.prodProgress}%</strong> • Materials: <strong>${esc(o.mrStatus)}</strong></div></div>${canWf ? (o.qcStatus !== 'Passed' ? `<button type="button" data-action="pass-qc" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-semibold">Complete Build, Pass QC & Send to Logistics →</button>` : `<button type="button" data-go="log-plan" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Open in Logistics Department →</button>`) : ''}</div>${renderBottomNav('production', 'qc')}`;
+}
+
+// SUPPLY CHAIN MODULE
+function renderSCMDashboard() {
+  const o = db.order;
+  return `${renderHeader('Supply Chain Dashboard')}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-[#1D4ED8]">${o.mrId} • ${o.proId}</strong>${badgeHTML(o.mrStatus)}</div><div>GRN-001 Confirmed: <strong>${o.grnConfirmed ? 'Yes' : 'Pending'}</strong> • MI-002 Issued: <strong>${o.mi2Issued ? 'Yes' : 'Pending'}</strong></div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-go="scm-stock" class="py-2 rounded-lg bg-slate-100 font-semibold">Stock Check</button><button type="button" data-go="scm-grn" class="py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">GRN & Issue</button></div></div></div>${renderBottomNav('supply-chain', 'home')}`;
+}
+function renderSCMStock() {
+  return `${renderHeader('Stock Availability: MR-001', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl overflow-hidden"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 border-b text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Live Stock</th><th class="py-2 px-3 text-right">Status</th></tr></thead><tbody class="divide-y divide-slate-100">${db.materials.map((m) => `<tr><td class="py-2 px-3 font-medium">${esc(m.name)}</td><td class="py-2 px-2 text-center font-bold">${m.stock} ${esc(m.unit)}</td><td class="py-2 px-3 text-right">${badgeHTML(m.stock <= 0 ? 'Pending' : m.stock < m.minStock ? 'Partially Issued' : 'Approved')}</td></tr>`).join('')}</tbody></table></div><button type="button" data-go="scm-grn" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Next: Confirm GRN-001 & Issue MI-002 →</button></div>${renderBottomNav('supply-chain', 'req')}`;
+}
+function renderSCMGRN() {
+  const o = db.order;
+  return `${renderHeader('GRN-001 & Material Issue', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">GRN-001 (PO-001 • ABC Industrial)</strong>${badgeHTML(o.grnConfirmed ? 'Completed' : 'Pending')}</div><div>Accepted: 3 Steel Sheets + 2 Temperature Controllers</div>${!o.grnConfirmed ? `<button type="button" data-action="confirm-grn" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-semibold">1. Confirm GRN-001 & Update Live Inventory</button>` : `<div class="text-emerald-700 font-semibold">✓ Inventory updated automatically!</div>`}</div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">MI-002 (Remaining for MR-001)</strong>${badgeHTML(o.mi2Issued ? 'Fully Issued' : 'Pending')}</div><div>Issue 3 Steel Sheets + 2 Controllers to PRO-001</div>${o.grnConfirmed && !o.mi2Issued ? `<button type="button" data-action="issue-mi2" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">2. Issue MI-002 & Mark PRO-001 Ready</button>` : o.mi2Issued ? `<button type="button" data-go="prod-qc" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Next: Continue in Production →</button>` : `<div class="text-slate-400">Confirm GRN-001 first to unlock MI-002.</div>`}</div></div>${renderBottomNav('supply-chain', 'po')}`;
+}
+
+// LOGISTICS MODULE
+function renderLogDashboard() {
+  const o = db.order;
+  return `${renderHeader('Logistics Dashboard')}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-[#1D4ED8]">${o.delId} • ${esc(o.customer)}</strong>${badgeHTML(o.delStatus)}</div><div>${esc(o.product)} × ${o.qty} • Chennai, Tamil Nadu • COD: ${fmtINR(Math.max(0, o.orderValue - o.receivedAmount))}</div><button type="button" data-go="log-plan" class="w-full py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">Open Delivery Workflow →</button></div></div>${renderBottomNav('logistics', 'home')}`;
+}
+function renderLogPlan() {
+  const o = db.order;
+  return `${renderHeader('Delivery Plan & Packing', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><strong>${o.delId} • ${o.pkgId} • ${o.dcId}</strong><div>Vehicle: <strong>TN 01 AB 1234 (Mini Truck)</strong> • Est. Expense: ₹3,000</div><div>Payment Terms: <strong>${esc(o.paymentArrangement)}</strong></div></div><button type="button" data-go="log-dispatch" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Next: Confirm Dispatch →</button></div>${renderBottomNav('logistics', 'plan')}`;
+}
+function renderLogDispatch() {
+  const o = db.order;
+  return `${renderHeader('Dispatch Order (DSP-001)', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong>${o.delId} • TN 01 AB 1234</strong>${badgeHTML(o.delStatus)}</div><div>Packing PKG-001 & Challan DC-001 verified. Driver: Selvam K.</div></div>${o.delStatus !== 'In Transit' && o.delStatus !== 'Delivered' ? `<button type="button" data-action="do-dispatch" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Confirm Dispatch → Mark In Transit</button>` : `<button type="button" data-go="log-pod" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-semibold">Next: Confirm Delivery (POD) →</button>`}</div>${renderBottomNav('logistics', 'disp')}`;
+}
+function renderLogPOD() {
+  const o = db.order;
+  const bal = Math.max(0, o.orderValue - o.receivedAmount);
+  return `${renderHeader('Proof of Delivery & COD', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(o.customer)} (${o.soId})</strong>${badgeHTML(o.podRecorded ? 'Delivered' : 'In Transit')}</div><div>Delivered: <strong>${o.qty} Deep Freezers</strong> • Signed DC-001 attached</div><div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-amber-800">Balance to Collect: <strong>${fmtINR(bal)}</strong></div></div>${!o.podRecorded ? `<button type="button" data-action="confirm-pod" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-semibold">Confirm POD, Collect ${fmtINR(bal)} & Complete SO-001</button>` : `<button type="button" data-go="admin-journey" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">✓ Completed! View 22/22 Journey in Admin →</button>`}</div>${renderBottomNav('logistics', 'pod')}`;
+}
+
+// EMPLOYEE & PERMISSIONS MODULE
+function renderEmpDashboard() {
+  return `${renderHeader('Employee & Permissions')}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><strong>Strict Account & Access Scope</strong><div class="text-slate-600">Zero HR/Attendance/Payroll. Test live permission hiding using the top persona dropdown!</div><button type="button" data-go="emp-matrix" class="w-full py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">Open Arun Kumar Permission Matrix →</button></div></div>${renderBottomNav('employees', 'home')}`;
+}
+function renderEmpMatrix() {
+  return `${renderHeader('Permissions: EMP-001 Arun', { back: true })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="font-semibold text-[#1E3A8A]">Sales Management (Standard + Send Quote)</div><div class="text-slate-600">Customers, Enquiries, Quotations: View/Create/Edit • Payments: View Only</div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="font-semibold text-[#1E3A8A]">Production Management (View Only)</div><div class="text-slate-600">Dashboard, PRO, Progress: View Only (All edit/action buttons hidden)</div></div><div class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-rose-700">Supply Chain, Logistics & Employee Admin: No Access (Hidden from login)</div></div>${renderBottomNav('employees', 'perm')}`;
+}
+
+/* ---------- DEPT SWITCHER BOTTOM SHEET ---------- */
+function renderSheet() {
+  const root = document.getElementById('sheetRoot');
+  if (!db.activeSheet) { root.className = 'hidden'; root.innerHTML = ''; return; }
+  const u = curUser();
+  root.className = 'sheet-backdrop';
+  root.innerHTML = `<div class="sheet-panel"><div class="px-4 py-3 border-b flex justify-between items-center"><h2 class="text-sm font-semibold">Switch Department</h2><button type="button" data-action="close-sheet" class="p-1 text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="p-3.5 space-y-2 overflow-y-auto">${u.isAdmin ? `<button type="button" data-go="admin-dashboard" class="w-full text-left p-3 rounded-xl border ${db.activeDept === 'admin' ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-slate-50 border-slate-200'} text-xs font-semibold">Centralized Admin Dashboard</button>` : ''}${u.depts.map((dk) => `<button type="button" data-go="${DEPT_META[dk].home}" class="w-full text-left p-3 rounded-xl border ${db.activeDept === dk ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-slate-50 border-slate-200'} text-xs font-semibold flex justify-between"><span>${esc(DEPT_META[dk].name)}</span><span class="opacity-75">${canAct(dk, 'edit') ? 'Full/Std' : 'View Only'}</span></button>`).join('')}</div></div>`;
+  lucide.createIcons({ nodes: [root] });
+}
+
+/* ---------- ROUTER ---------- */
+function renderScreenMarkup(id) {
+  const map = {
+    'auth-splash': renderSplash, 'auth-login': renderAuthLogin, 'auth-dept-select': renderAuthDeptSelect,
+    'auth-first-pwd': () => renderAuthStateCard('key-round', 'text-[#1D4ED8]', 'First Login Password Change', 'Temporary password detected. Set a new password before accessing Cryo ERP.', 'Change Password & Continue', 'auth-dept-select'),
+    'auth-forgot': () => renderAuthStateCard('mail', 'text-[#1D4ED8]', 'Forgot Password', 'Enter your registered email. If an account exists, a reset link is sent securely.', 'Back to Login', 'auth-login'),
+    'auth-inactive': () => renderAuthStateCard('user-x', 'text-rose-500', 'Account Inactive', 'Your login account has been deactivated by Admin. Historical records remain preserved.', 'Return to Login', 'auth-login'),
+    'auth-expired': () => renderAuthStateCard('clock', 'text-amber-500', 'Session Expired', 'For security, your Cryo ERP session timed out. Please sign in again.', 'Sign In Again', 'auth-login'),
+    'auth-restricted': () => renderAuthStateCard('shield-off', 'text-rose-600', 'Access Restricted', 'You do not have permission to open this department or perform this action.', 'Open Authorized Workspace', 'auth-dept-select'),
+    'admin-dashboard': renderAdminDashboard, 'admin-depts': renderAuthDeptSelect, 'admin-journey': renderAdminJourney, 'admin-approvals': renderAdminApprovals, 'admin-reports': renderAdminReports,
+    'sales-dashboard': renderSalesDashboard, 'sales-enquiry': renderSalesEnquiry, 'sales-quotation': renderSalesQuotation, 'sales-order': renderSalesOrder,
+    'prod-dashboard': renderProdDashboard, 'prod-order': renderProdOrder, 'prod-bom': renderProdBOM, 'prod-qc': renderProdQC,
+    'scm-dashboard': renderSCMDashboard, 'scm-stock': renderSCMStock, 'scm-grn': renderSCMGRN, 'scm-inventory': renderSCMStock,
+    'log-dashboard': renderLogDashboard, 'log-plan': renderLogPlan, 'log-dispatch': renderLogDispatch, 'log-pod': renderLogPOD,
+    'emp-dashboard': renderEmpDashboard, 'emp-list': renderEmpDashboard, 'emp-matrix': renderEmpMatrix
+  };
+  return (map[id] || renderAdminDashboard)();
+}
+
+/* ---------- SIDEBAR, WORKFLOW & REACT NATIVE DEVELOPER HANDOFF (SECTION 12) ---------- */
+function renderSidebar() {
+  document.getElementById('sbModeJourneyBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${db.sidebarMode === 'journey' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sbModeModulesBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${db.sidebarMode === 'modules' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  const c = document.getElementById('sidebarList');
+
+  if (db.sidebarMode === 'journey') {
+    const steps = [
+      ['0', 'Splash & Common Login', 'Test single login & 5 permission personas', 'auth-splash'],
+      ['1', 'Admin Dashboard & 22-Stage Map', 'Live SO-001 progress across all 5 depts', 'admin-dashboard'],
+      ['2', 'Sales: ENQ → QT (v2) → SO-001', 'Negotiation, PI, CPO & Order confirmation', 'sales-quotation'],
+      ['3', 'Production: PRO-001 & BOM-001', 'Auto-calculated raw materials for 2 units', 'prod-bom'],
+      ['4', 'Supply Chain: GRN-001 → MI-002', 'Confirm GRN, increase stock & issue rest', 'scm-grn'],
+      ['5', 'Production: Finish & Pass QC', 'Pass quality check & send to Logistics', 'prod-qc'],
+      ['6', 'Logistics: Dispatch & POD + COD', 'TN 01 AB 1234 → Sign POD & collect ₹50k', 'log-pod'],
+      ['7', 'Employees & Permissions', 'Arun Kumar matrix & live access gating', 'emp-matrix']
+    ];
+    c.innerHTML = `<div class="px-1.5 pt-1 pb-1.5"><div class="text-xs font-semibold text-slate-900">Live End-to-End Test Drive</div><div class="text-[11px] text-slate-500">Click steps 1→7 to watch SO-001 update live across every department.</div></div><div class="space-y-1.5 px-1">${steps.map(([n, t, d, sc]) => `<button type="button" data-go="${sc}" class="w-full p-2.5 rounded-xl text-left border transition flex items-start gap-2.5 ${db.screen === sc && db.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-800 border-slate-200 hover:border-[#1D4ED8]'}"><span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 ${db.screen === sc && db.viewMode === 'phone' ? 'bg-white text-[#1E3A8A]' : 'bg-blue-50 text-[#1E3A8A]'}">${n}</span><div><div class="text-xs font-semibold leading-tight">${t}</div><div class="text-[10px] mt-0.5 ${db.screen === sc && db.viewMode === 'phone' ? 'text-blue-100' : 'text-slate-500'}">${d}</div></div></button>`).join('')}</div>`;
+  } else {
+    const groups = [
+      ['Authentication (8)', [['Splash', 'auth-splash'], ['Common Login', 'auth-login'], ['Dept Selection', 'auth-dept-select'], ['First Login Pwd', 'auth-first-pwd'], ['Forgot Password', 'auth-forgot'], ['Account Inactive', 'auth-inactive'], ['Session Expired', 'auth-expired'], ['Access Restricted', 'auth-restricted']]],
+      ['Centralized Admin (47)', [['Admin Dashboard', 'admin-dashboard'], ['22-Stage Order Journey', 'admin-journey'], ['Pending Approvals', 'admin-approvals'], ['7 Dept Reports', 'admin-reports']]],
+      ['Sales (44)', [['Sales Dashboard', 'sales-dashboard'], ['Enquiries', 'sales-enquiry'], ['Quotations', 'sales-quotation'], ['Sales Order', 'sales-order']]],
+      ['Production (43)', [['Prod Dashboard', 'prod-dashboard'], ['PRO-001 Details', 'prod-order'], ['BOM-001', 'prod-bom'], ['Build & QC', 'prod-qc']]],
+      ['Supply Chain (43)', [['SCM Dashboard', 'scm-dashboard'], ['Stock Check', 'scm-stock'], ['GRN-001 & MI-002', 'scm-grn']]],
+      ['Logistics (58)', [['Logistics Dashboard', 'log-dashboard'], ['Plan & Packing', 'log-plan'], ['Dispatch', 'log-dispatch'], ['POD & COD', 'log-pod']]],
+      ['Employees & Access (36)', [['Employee Dashboard', 'emp-dashboard'], ['Permission Matrix', 'emp-matrix']]]
+    ];
+    c.innerHTML = groups.map(([g, items]) => `<div><div class="text-[10px] font-bold uppercase text-slate-400 px-2 mb-1">${g}</div><div class="space-y-0.5">${items.map(([l, s]) => `<button type="button" data-go="${s}" class="w-full px-2.5 py-1.5 rounded-lg text-left text-xs ${db.screen === s ? 'bg-[#1E3A8A] text-white font-semibold' : 'text-slate-700 hover:bg-slate-100'}">${l}</button>`).join('')}</div></div>`).join('');
+  }
+}
+
+function renderWorkflowView() {
+  document.getElementById('workflowContainer').innerHTML = `
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+      <div><h2 class="text-base font-bold text-slate-900">Complete Integrated Cryo ERP Workflow (22 Stages)</h2><p class="text-xs text-slate-500">Click any department box to jump directly into its live connected screen.</p></div>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
+        <button type="button" data-go="sales-dashboard" class="text-left bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 space-y-1.5 hover:border-[#1D4ED8]"><div class="font-bold text-[#1E3A8A]">1. Sales (44)</div><div class="text-slate-600">ENQ-001 → Follow-up → Qualified → QT-001 (v2) → PI-001 → CPO-001 → SO-001</div></button>
+        <button type="button" data-go="prod-dashboard" class="text-left bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 space-y-1.5 hover:border-[#1D4ED8]"><div class="font-bold text-[#1E3A8A]">2. Production (43)</div><div class="text-slate-600">Receive SO-001 → PRO-001 → BOM-001 → Send MR-001 to Supply Chain</div></button>
+        <button type="button" data-go="scm-dashboard" class="text-left bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 space-y-1.5 hover:border-amber-500"><div class="font-bold text-amber-800">3. Supply Chain (43)</div><div class="text-slate-600">Stock Check → MI-001 Partial → PR-001 → PO-001 → GRN-001 → MI-002 Full</div></button>
+        <button type="button" data-go="prod-qc" class="text-left bg-purple-50/70 border border-purple-200 rounded-xl p-3.5 space-y-1.5 hover:border-purple-500"><div class="font-bold text-purple-800">4. Build & QC</div><div class="text-slate-600">Receive Materials → Plan → Daily Build → QC Check (or Rework) → Logistics</div></button>
+        <button type="button" data-go="log-dashboard" class="text-left bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-1.5 hover:border-emerald-500"><div class="font-bold text-emerald-800">5. Logistics (58)</div><div class="text-slate-600">DEL-001 → PKG-001 → DC-001 → Dispatch → Track → POD + ₹50k COD</div></button>
+      </div>
+    </div>`;
+}
+
+const RN_THEME_JSON = JSON.stringify({
+  app: 'Cryo Enterprise ERP Mobile',
+  framework: 'React Native (Expo / React Navigation 6)',
+  tokens: {
+    colors: { primary: '#1E3A8A', primaryAccent: '#1D4ED8', background: '#F8FAFC', card: '#FFFFFF', border: '#E2E8F0', textPrimary: '#0F172A', textMuted: '#64748B', success: '#059669', warning: '#D97706', danger: '#E11D48' },
+    typography: { fontFamily: 'Inter', header: 15, title: 16, body: 12, caption: 11, badge: 11 },
+    radius: { card: 12, button: 12, input: 8, badge: 999, bottomSheet: 20 },
+    spacing: { screenPadding: 14, cardPadding: 14, gap: 10, bottomNavHeight: 58 }
+  },
+  modules: {
+    AuthStack: ['SplashScreen', 'CommonLoginScreen', 'FirstLoginPwdScreen', 'ForgotPwdScreen', 'DeptSelectScreen', 'AccessRestrictedScreen'],
+    AdminTabs: ['AdminDashboard', 'DepartmentsOverview', 'AllOrders / OrderJourney22', 'ReportsDashboard (7)', 'AdminMore'],
+    SalesTabs: ['SalesDashboard', 'Enquiries (List/Create/Edit/Detail)', 'FollowUps', 'OrdersHub (QT/PI/CPO/SO)', 'SalesMore (Customers/Products/Payments)'],
+    ProductionTabs: ['ProdDashboard', 'OrdersHub (IncomingSO/PRO)', 'MaterialsHub (BOM/MR/Receipts)', 'ProductionHub (Plan/Daily/QC/Completed)', 'ProdMore'],
+    SupplyChainTabs: ['SCMDashboard', 'RequestsHub (MR/MI/Shortages)', 'InventoryHub (Stock/Materials/History)', 'PurchaseHub (PR/PO/GRN/Suppliers)', 'SCMMore'],
+    LogisticsTabs: ['LogDashboard', 'OrdersHub (Ready/Plan/Completed)', 'DispatchHub (Pack/DC/Ready/Dispatched)', 'Tracking (Own/Courier/POD)', 'LogMore (Vehicles/Providers/Expenses)'],
+    EmployeeTabs: ['EmpDashboard', 'Employees (List/Create/Edit/Detail)', 'Departments', 'AccessHub (Roles/Matrix/Accounts)', 'EmpMore (AuditLogs/Profile)']
+  },
+  reusableComponents: ['AppHeader', 'DeptReturnBanner', 'FixedBottomNav (5-tab)', 'StatusBadge', 'SearchableDropdown', 'BottomSheetModal', 'StickyActionFooter', 'PipelineStepper', 'PermissionGate (Frontend + Backend RBAC)']
+}, null, 2);
+
+function renderHandoffView() {
+  document.getElementById('handoffContainer').innerHTML = `
+    <div class="space-y-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div><h2 class="text-base font-bold text-slate-900">React Native Developer Handoff Specification</h2><p class="text-xs text-slate-500">Unified design tokens, 271+ organized screens across 6 modules, navigation hierarchy, reusable components & permission rules.</p></div>
+        <button type="button" data-action="copy-rn" class="px-4 py-2 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold shrink-0">Copy RN Theme & Routes JSON</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
+          <div class="font-bold text-[#1E3A8A] uppercase text-[11px]">Design Tokens</div>
+          <div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-[#1E3A8A]"></span>Primary Navy: <code>#1E3A8A</code></div>
+          <div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-[#1D4ED8]"></span>Royal Accent: <code>#1D4ED8</code></div>
+          <div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-[#F8FAFC] border"></span>Surface BG: <code>#F8FAFC</code></div>
+          <div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-emerald-600"></span>Success: <code>#059669</code> • Warn: <code>#D97706</code></div>
+          <div class="text-slate-500 pt-1">Font: <strong>Inter</strong> • Card Radius: 12px • Bottom Nav: 5 tabs (single bar rule)</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-1.5">
+          <div class="font-bold text-[#1E3A8A] uppercase text-[11px]">Reusable RN Components</div>
+          <ul class="list-disc pl-4 space-y-1 text-slate-700">
+            <li><code>&lt;AppHeader /&gt;</code> + <code>&lt;DeptReturnBanner /&gt;</code></li>
+            <li><code>&lt;FixedBottomNav /&gt;</code> (5 tabs per module)</li>
+            <li><code>&lt;SearchableDropdown /&gt;</code> (+ inline Add New)</li>
+            <li><code>&lt;BottomSheetModal /&gt;</code> & <code>&lt;StickyActionFooter /&gt;</code></li>
+            <li><code>&lt;StatusBadge /&gt;</code> & <code>&lt;PipelineStepper /&gt;</code></li>
+            <li><code>&lt;PermissionGate dept action /&gt;</code></li>
+          </ul>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-1.5">
+          <div class="font-bold text-[#1E3A8A] uppercase text-[11px]">Backend & RBAC Enforcement</div>
+          <ul class="list-disc pl-4 space-y-1 text-slate-700">
+            <li>Single JWT login per employee; load authorized departments & screen/action matrix on boot.</li>
+            <li>Explicit Deny overrides inherited Role Grants.</li>
+            <li>Enforce all workflow & inventory rules (no negative stock, no duplicate GRN/MI/Dispatch) server-side.</li>
+            <li>Read-only Audit Logs; never log passwords or tokens.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 text-slate-100 rounded-2xl p-4 overflow-x-auto"><pre class="text-[11px] leading-relaxed font-mono">${esc(RN_THEME_JSON)}</pre></div>
+    </div>`;
+}
+
+function renderAll() {
+  ['Phone', 'Flow', 'Handoff'].forEach((m) => {
+    const key = m === 'Phone' ? 'phone' : m === 'Flow' ? 'workflow' : 'handoff';
+    document.getElementById(`mode${m}Btn`).className = `px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${db.viewMode === key ? 'bg-[#1E3A8A] text-white shadow-sm' : 'text-slate-600'}`;
+  });
+  document.getElementById('phoneContainer').classList.toggle('hidden', db.viewMode !== 'phone');
+  document.getElementById('workflowContainer').classList.toggle('hidden', db.viewMode !== 'workflow');
+  document.getElementById('handoffContainer').classList.toggle('hidden', db.viewMode !== 'handoff');
+  renderSidebar();
+
+  if (db.viewMode === 'phone') {
+    const root = document.getElementById('screenRoot');
+    root.innerHTML = renderScreenMarkup(db.screen);
+    lucide.createIcons({ nodes: [root] });
+    renderSheet();
+    const metaEl = document.getElementById('screenFooterMeta');
+    if (metaEl) metaEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-[#1E3A8A]">${esc(curUser().name)}</span><span>${esc(curUser().label)}</span><span>•</span><span>Screen: <strong>${esc(db.screen)}</strong></span>`;
+  } else if (db.viewMode === 'workflow') renderWorkflowView();
+  else renderHandoffView();
+}
+
+/* ---------- EVENTS ---------- */
+document.getElementById('personaSelect').addEventListener('change', (e) => {
+  db.personaKey = e.target.value;
+  const u = curUser();
+  if (u.isAdmin) goScreen('admin-dashboard', 'admin');
+  else if (u.depts.length > 1) goScreen('auth-dept-select');
+  else goScreen(DEPT_META[u.depts[0]].home, u.depts[0]);
+  showToast(`Signed in as ${u.name} (${u.label})`);
+});
+document.getElementById('modePhoneBtn').addEventListener('click', () => { db.viewMode = 'phone'; renderAll(); });
+document.getElementById('modeFlowBtn').addEventListener('click', () => { db.viewMode = 'workflow'; renderAll(); });
+document.getElementById('modeHandoffBtn').addEventListener('click', () => { db.viewMode = 'handoff'; renderAll(); });
+document.getElementById('sbModeJourneyBtn').addEventListener('click', () => { db.sidebarMode = 'journey'; renderSidebar(); });
+document.getElementById('sbModeModulesBtn').addEventListener('click', () => { db.sidebarMode = 'modules'; renderSidebar(); });
+
+const sidebarEl = document.getElementById('screenSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+document.getElementById('toggleSidebarBtn').addEventListener('click', () => { sidebarEl.classList.toggle('-translate-x-full'); sidebarOverlay.classList.toggle('hidden'); });
+sidebarOverlay.addEventListener('click', () => { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); });
+
+document.addEventListener('click', (e) => {
+  const go = e.target.closest('[data-go]');
+  if (go) { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); goScreen(go.dataset.go); return; }
+
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const act = btn.dataset.action;
+
+  if (act === 'go-back') goBack();
+  else if (act === 'close-sheet') { db.activeSheet = null; renderSheet(); }
+  else if (act === 'open-dept-switcher') { db.activeSheet = { type: 'switch' }; renderSheet(); }
+  else if (act === 'do-login') {
+    const u = curUser();
+    if (u.isAdmin) goScreen('admin-dashboard', 'admin');
+    else if (u.depts.length > 1) goScreen('auth-dept-select');
+    else goScreen(DEPT_META[u.depts[0]].home, u.depts[0]);
+  } else if (act === 'apr') {
+    const a = db.approvals.find((x) => x.id === btn.dataset.id);
+    if (a) { a.status = btn.dataset.val; logEvent('Admin', `${a.status} ${a.type} (${a.ref})`); renderAll(); showToast(`${a.ref} ${a.status}`); }
+  } else if (act === 'add-inline-cust') {
+    db.customers.push({ id: `CUST-00${db.customers.length + 1}`, name: 'Nova Bio Labs', contact: 'Dr. Vikram', phone: '+91 98400 77112', email: 'vikram@novabio.in', address: 'Chennai' });
+    logEvent('Sales', 'Added Nova Bio Labs to Shared Customer Master');
+    renderAll(); showToast('Nova Bio Labs added to Shared Customer Master');
+  } else if (act === 'confirm-grn') {
+    db.order.grnConfirmed = true;
+    db.materials[1].stock += 3; db.materials[2].stock += 2;
+    db.order.completedStageNum = Math.max(db.order.completedStageNum, 13);
+    logEvent('Supply Chain', 'GRN-001 confirmed (+3 Steel Sheets, +2 Controllers)');
+    renderAll(); showToast('GRN-001 confirmed — Live Inventory updated!');
+  } else if (act === 'issue-mi2') {
+    db.order.mi2Issued = true; db.order.mrStatus = 'Fully Issued'; db.order.proStatus = 'Materials Ready';
+    db.materials[1].stock = Math.max(0, db.materials[1].stock - 3);
+    db.materials[2].stock = Math.max(0, db.materials[2].stock - 2);
+    db.order.completedStageNum = Math.max(db.order.completedStageNum, 15);
+    logEvent('Supply Chain', 'MI-002 issued remaining stock → PRO-001 Materials Ready');
+    renderAll(); showToast('MI-002 issued — PRO-001 is now Materials Ready!');
+  } else if (act === 'pass-qc') {
+    db.order.prodProgress = 100; db.order.qcStatus = 'Passed'; db.order.proStatus = 'Completed'; db.order.delStatus = 'Ready to Dispatch';
+    db.order.completedStageNum = Math.max(db.order.completedStageNum, 18);
+    logEvent('Production', 'PRO-001 build 100%, QC Passed → Sent to Logistics');
+    renderAll(); showToast('QC Passed — PRO-001 sent to Logistics!');
+  } else if (act === 'do-dispatch') {
+    db.order.delStatus = 'In Transit'; db.vehicles[0].status = 'In Transit';
+    db.order.completedStageNum = Math.max(db.order.completedStageNum, 20);
+    logEvent('Logistics', 'DEL-001 dispatched via TN 01 AB 1234 (DSP-001)');
+    renderAll(); showToast('DEL-001 dispatched — In Transit!');
+  } else if (act === 'confirm-pod') {
+    db.order.podRecorded = true; db.order.delStatus = 'Delivered'; db.order.receivedAmount = db.order.orderValue;
+    db.vehicles[0].status = 'Available'; db.order.completedStageNum = 22;
+    logEvent('Logistics', 'POD signed, ₹50,000 COD collected → SO-001 Delivered & Paid');
+    renderAll(); showToast('SO-001 Delivered, Paid & 22/22 Stages Complete!');
+  } else if (act === 'copy-rn') {
+    try {
+      if (navigator.clipboard) navigator.clipboard.writeText(RN_THEME_JSON);
+      else { const ta = document.createElement('textarea'); ta.value = RN_THEME_JSON; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+      showToast('Copied React Native Theme & Routes JSON!');
+    } catch { showToast('Copy ready from code block below'); }
+  }
+});
+
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cryo ERP – Employee Management & Permissions Mobile App</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --navy:#1E3A8A; --royal:#1D4ED8; --bg:#F8FAFC; --card:#FFFFFF; --border:#E2E8F0; --text:#0F172A; }
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; background: #EEF2F6; color: var(--text); overflow-x: hidden; }
+    .phone-shell {
+      width: 390px; max-width: 100%; height: 820px; max-height: calc(100vh - 76px);
+      background: var(--bg); border-radius: 36px; border: 8px solid #0F172A;
+      box-shadow: 0 24px 60px -15px rgba(15, 23, 42, 0.28);
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    @media (max-width: 520px) {
+      .phone-shell { width: 100%; height: calc(100vh - 56px); max-height: none; border-radius: 0; border: none; box-shadow: none; }
+    }
+    .phone-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .phone-scroll::-webkit-scrollbar { width: 4px; }
+    .phone-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: flex-end; z-index: 40; animation: fadeIn 0.16s ease-out; }
+    .sheet-panel { width: 100%; max-height: 88%; background: #FFF; border-top-left-radius: 20px; border-top-right-radius: 20px; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(24px); opacity: 0.9; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulseBg { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    .skeleton { animation: pulseBg 1.4s ease-in-out infinite; background: #E2E8F0; border-radius: 6px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .toast-bar { position: absolute; top: 46px; left: 14px; right: 14px; z-index: 60; animation: fadeIn 0.16s ease-out; }
+    .gallery-mini-phone { width: 100%; aspect-ratio: 9 / 16; max-height: 360px; background: #F8FAFC; border: 3px solid #1E293B; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .gallery-mini-phone:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(30, 58, 138, 0.2); border-color: #1D4ED8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Toolbar -->
+  <header class="bg-white border-b border-slate-200 px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button id="toggleSidebarBtn" type="button" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Toggle menu">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm shrink-0">C</div>
+      <div class="min-w-0">
+        <div class="font-semibold text-sm text-slate-900 truncate">Cryo ERP – Employee & Permissions</div>
+        <div class="text-[11px] text-slate-500 truncate hidden sm:block">Account & Access Management • 36 Mobile Screens</div>
+      </div>
+    </div>
+
+    <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+      <button id="modePhoneBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">App</span></button>
+      <button id="modeGalleryBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">All 36</span></button>
+      <button id="modeFlowBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="git-branch" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Flow</span></button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex relative overflow-hidden">
+    <!-- Left Guided Flow / All 36 Screens Sidebar -->
+    <aside id="screenSidebar" class="fixed lg:static inset-y-14 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="p-3 border-b border-slate-200 space-y-2.5">
+        <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+          <button id="sbModeFlowBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">Simple Flow</button>
+          <button id="sbModeAllBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">All 36 Screens</button>
+        </div>
+        <div id="sidebarSearchWrap" class="relative hidden">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5"></i>
+          <input id="sidebarSearch" type="text" placeholder="Find any of 36 screens..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D4ED8]" />
+        </div>
+      </div>
+      <div id="sidebarList" class="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-3"></div>
+    </aside>
+    <div id="sidebarOverlay" class="fixed inset-0 top-14 bg-slate-900/30 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Canvas -->
+    <main class="flex-1 overflow-y-auto flex items-start justify-center p-0 sm:p-4 lg:p-5">
+      <div id="phoneContainer" class="flex flex-col items-center w-full">
+        <div class="phone-shell">
+          <div class="h-7 px-5 bg-white flex items-center justify-between text-[11px] font-semibold text-slate-800 shrink-0 select-none border-b border-slate-100">
+            <span>13:24</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full hidden sm:block"></div>
+            <div class="flex items-center gap-1.5 text-slate-700"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></div>
+          </div>
+          <div id="phoneToast" class="toast-bar hidden"></div>
+          <div id="screenRoot" class="flex-1 flex flex-col min-h-0 relative"></div>
+          <div id="sheetRoot" class="hidden"></div>
+        </div>
+        <div id="screenFooterMeta" class="hidden sm:flex items-center gap-2 mt-2.5 text-xs text-slate-500"></div>
+      </div>
+
+      <div id="galleryContainer" class="hidden w-full max-w-7xl mx-auto pb-8"></div>
+      <div id="workflowContainer" class="hidden w-full max-w-5xl mx-auto pb-8"></div>
+    </main>
+  </div>
+
+<script>
+/* ==========================================================================
+   CRYO ERP – EMPLOYEE MANAGEMENT & PERMISSIONS MOBILE APP
+   Complete 36-Screen Interactive Prototype (Sections 5–40)
+   Strict Scope: Account & Access Management ONLY (Zero HR/Attendance/Payroll)
+   ========================================================================== */
+
+const SCREEN_CATALOG = [
+  { group: 'Core & Navigation', items: [
+    { id: 'dashboard', num: 5, title: 'Employee Dashboard' },
+    { id: 'permissions-hub', num: 20, title: 'Access & Permissions Hub' },
+    { id: 'more', num: 37, title: 'More Menu' },
+    { id: 'profile', num: 38, title: 'Profile' },
+    { id: 'change-password', num: 39, title: 'Change Password' }
+  ]},
+  { group: 'Employees & Department Assignment', items: [
+    { id: 'employees-list', num: 6, title: 'Employees List' },
+    { id: 'add-employee', num: 7, title: 'Add Employee' },
+    { id: 'employee-details', num: 8, title: 'Employee Details' },
+    { id: 'edit-employee', num: 9, title: 'Edit Employee' },
+    { id: 'assign-departments', num: 10, title: 'Assign Departments' }
+  ]},
+  { group: 'Departments', items: [
+    { id: 'departments-list', num: 11, title: 'Departments List' },
+    { id: 'add-department', num: 12, title: 'Add Department' },
+    { id: 'department-details', num: 13, title: 'Department Details' },
+    { id: 'edit-department', num: 14, title: 'Edit Department' }
+  ]},
+  { group: 'Roles & Permission Matrices', items: [
+    { id: 'roles-list', num: 15, title: 'Roles List' },
+    { id: 'create-role', num: 16, title: 'Create Role' },
+    { id: 'role-details', num: 17, title: 'Role Details' },
+    { id: 'edit-role', num: 18, title: 'Edit Role' },
+    { id: 'assign-role', num: 19, title: 'Assign Role' },
+    { id: 'emp-permissions-list', num: 21, title: 'Employee Permissions List' },
+    { id: 'configure-permissions', num: 22, title: 'Configure Permissions Matrix' },
+    { id: 'permission-review', num: 23, title: 'Permission Review' }
+  ]},
+  { group: 'Login Accounts & Audit Logs', items: [
+    { id: 'accounts-list', num: 24, title: 'Login Accounts List' },
+    { id: 'create-account', num: 25, title: 'Create Login Account' },
+    { id: 'account-details', num: 26, title: 'Login Account Details' },
+    { id: 'reset-password', num: 27, title: 'Reset Password' },
+    { id: 'toggle-account-sheet', num: 28, title: 'Activate / Deactivate (Sheet)' },
+    { id: 'activity-logs', num: 29, title: 'Activity Logs' },
+    { id: 'activity-details', num: 30, title: 'Activity Details' }
+  ]},
+  { group: 'Common Login & Dept Switching', items: [
+    { id: 'common-login', num: 31, title: 'Common Employee Login' },
+    { id: 'first-login-password', num: 32, title: 'First Login Password Change' },
+    { id: 'forgot-password', num: 33, title: 'Forgot Password' },
+    { id: 'dept-selection', num: 34, title: 'Employee Dept Selection' },
+    { id: 'switch-dept', num: 35, title: 'Switch Department' },
+    { id: 'permission-denied', num: 36, title: 'Permission Denied' }
+  ]},
+  { group: 'Common UI States', items: [
+    { id: 'ui-states', num: 40, title: 'Common UI States (16)' }
+  ]}
+];
+
+const DEPT_SCREENS = {
+  'Sales Management': ['Dashboard', 'Customers', 'Products', 'Enquiries', 'Follow-ups', 'Qualified Enquiries', 'Quotations', 'Proforma Invoices', 'Customer Purchase Orders', 'Payments', 'Sales Orders'],
+  'Production Management': ['Dashboard', 'Incoming Sales Orders', 'Production Orders', 'BOM', 'Material Requests', 'Material Receipts', 'Production Planning', 'Daily Production', 'Quality Check', 'Completed Production'],
+  'Supply Chain Management': ['Dashboard', 'Material Requests', 'Materials Master', 'Inventory', 'Suppliers', 'Purchase Requirements', 'Purchase Orders', 'GRN', 'Material Issues', 'Stock History'],
+  'Logistics Management': ['Dashboard', 'Ready for Delivery', 'Delivery Planning', 'Vehicles', 'Courier Providers', 'Packing', 'Delivery Challans', 'Dispatch', 'Tracking', 'Customer Payments', 'Delivery Expenses', 'Delivery Confirmation', 'Completed Deliveries'],
+  'Employee Management': ['Dashboard', 'Employees', 'Departments', 'Roles', 'Permissions', 'Login Accounts', 'Activity Logs']
+};
+
+const DEPT_WORKFLOW_ACTIONS = {
+  'Sales Management': ['Send Quotation', 'Accept / Reject Quotation', 'Record Payment', 'Confirm Sales Order'],
+  'Production Management': ['Confirm BOM', 'Send Material Request', 'Confirm Material Receipt', 'Start Production', 'Complete Production'],
+  'Supply Chain Management': ['Confirm Purchase Order', 'Confirm GRN', 'Issue Materials', 'Adjust Stock'],
+  'Logistics Management': ['Confirm Dispatch', 'Record Payment', 'Update Tracking', 'Confirm Delivery'],
+  'Employee Management': ['Create Employee', 'Assign Department', 'Configure Permissions', 'Reset Password', 'Activate / Deactivate Account']
+};
+
+/* ---------- SHARED REACTIVE STATE (Exact Sample Data — Section 42) ---------- */
+const state = {
+  viewMode: 'phone',
+  sidebarMode: 'flow',
+  screen: 'dashboard',
+  history: [],
+  activeSheet: null,
+  galleryCategory: 'All',
+  uiStateDemo: 'perm-updated',
+
+  selected: {
+    empId: 'EMP-001',
+    deptId: 'DEPT-01',
+    roleId: 'ROLE-02',
+    logId: 'LOG-01',
+    permDeptTab: 'Sales Management',
+    empDetailTab: 'Overview'
+  },
+
+  filters: {
+    empSearch: '', empDept: 'All', empStatus: 'All',
+    deptSearch: '', roleSearch: '', accSearch: '', accStatus: 'All', logSearch: ''
+  },
+
+  currentDept: 'Employee Management',
+  showLoginPwd: false,
+  tempGeneratedPwd: '',
+  pendingPermChanges: null,
+
+  // Departments (5 Default Modules)
+  departments: [
+    { id: 'DEPT-01', code: 'SALES', name: 'Sales Management', module: 'Sales Management', desc: 'Enquiries, quotations, PI, customer POs & sales orders', status: 'Active' },
+    { id: 'DEPT-02', code: 'PROD', name: 'Production Management', module: 'Production Management', desc: 'Production orders, BOM, daily updates & quality check', status: 'Active' },
+    { id: 'DEPT-03', code: 'SCM', name: 'Supply Chain Management', module: 'Supply Chain Management', desc: 'Raw materials, inventory, POs, GRN & material issues', status: 'Active' },
+    { id: 'DEPT-04', code: 'LOG', name: 'Logistics Management', module: 'Logistics Management', desc: 'Delivery planning, packing, dispatch, tracking & POD', status: 'Active' },
+    { id: 'DEPT-05', code: 'EMP', name: 'Employee Management', module: 'Employee Management', desc: 'Employee accounts, departments, roles & permissions', status: 'Active' }
+  ],
+
+  // Reusable Role Templates
+  roles: [
+    { id: 'ROLE-01', name: 'Full Department Access', depts: ['Employee Management', 'Sales Management'], summary: 'View, Create, Edit, Process & Approve all screens', status: 'Active', desc: 'Complete operational and approval access for department leads.' },
+    { id: 'ROLE-02', name: 'Standard Access', depts: ['Sales Management'], summary: 'View, Create & Edit daily records; Send Quotation', status: 'Active', desc: 'Standard daily operations without destructive or admin overrides.' },
+    { id: 'ROLE-03', name: 'View Only', depts: ['Production Management'], summary: 'Read-only visibility across assigned screens', status: 'Active', desc: 'View status and progress without editing or workflow actions.' },
+    { id: 'ROLE-04', name: 'Custom Access', depts: ['Sales Management', 'Production Management'], summary: 'Tailored screen & action overrides per employee', status: 'Active', desc: 'Base template for custom employee-level overrides.' }
+  ],
+
+  // Employees (EMP-001 Arun Kumar matches Section 42 verbatim!)
+  employees: [
+    {
+      id: 'EMP-001', name: 'Arun Kumar', email: 'arun@example.com', phone: '+91 98401 11001',
+      designation: 'Sales Executive', accountStatus: 'Active', isLastAdmin: false,
+      accountCreated: '2026-10-12', lastLogin: '2026-11-20 09:42 AM', pwdResetRequired: false,
+      accessType: 'Mixed Access',
+      departments: ['Sales Management', 'Production Management'],
+      deptRoles: { 'Sales Management': 'Standard Access', 'Production Management': 'View Only' },
+      permissions: {
+        'Sales Management': {
+          'Dashboard': { view: true, create: false, edit: false, process: false },
+          'Customers': { view: true, create: true, edit: true, process: false },
+          'Products': { view: true, create: false, edit: false, process: false },
+          'Enquiries': { view: true, create: true, edit: true, process: false },
+          'Follow-ups': { view: true, create: true, edit: true, process: false },
+          'Qualified Enquiries': { view: true, create: false, edit: false, process: false },
+          'Quotations': { view: true, create: true, edit: true, process: true },
+          'Proforma Invoices': { view: true, create: false, edit: false, process: false },
+          'Customer Purchase Orders': { view: true, create: false, edit: false, process: false },
+          'Payments': { view: true, create: false, edit: false, process: false },
+          'Sales Orders': { view: true, create: false, edit: false, process: false }
+        },
+        'Production Management': {
+          'Dashboard': { view: true, create: false, edit: false, process: false },
+          'Production Orders': { view: true, create: false, edit: false, process: false },
+          'Daily Production': { view: true, create: false, edit: false, process: false }
+        }
+      },
+      workflowActions: { 'Sales Management': ['Send Quotation'], 'Production Management': [] }
+    },
+    {
+      id: 'EMP-002', name: 'Priya Nair', email: 'priya.admin@cryoerp.com', phone: '+91 98401 22002',
+      designation: 'ERP Administrator', accountStatus: 'Active', isLastAdmin: true,
+      accountCreated: '2026-09-01', lastLogin: '2026-11-20 13:10 PM', pwdResetRequired: false,
+      accessType: 'Role Based',
+      departments: ['Employee Management', 'Sales Management', 'Production Management', 'Supply Chain Management', 'Logistics Management'],
+      deptRoles: { 'Employee Management': 'Full Department Access', 'Sales Management': 'Full Department Access' },
+      permissions: { 'Employee Management': { 'Dashboard': { view: true, create: true, edit: true, process: true }, 'Employees': { view: true, create: true, edit: true, process: true } } },
+      workflowActions: { 'Employee Management': ['Create Employee', 'Assign Department', 'Configure Permissions', 'Reset Password', 'Activate / Deactivate Account'] }
+    },
+    {
+      id: 'EMP-003', name: 'Karthik R', email: 'karthik.r@cryoerp.com', phone: '+91 98401 33003',
+      designation: 'Store Executive', accountStatus: 'Login Not Created', isLastAdmin: false,
+      accountCreated: '', lastLogin: 'Never', pwdResetRequired: false,
+      accessType: 'Role Based',
+      departments: ['Supply Chain Management'],
+      deptRoles: { 'Supply Chain Management': 'Standard Access' },
+      permissions: { 'Supply Chain Management': { 'Dashboard': { view: true, create: false, edit: false, process: false }, 'Inventory': { view: true, create: false, edit: false, process: false } } },
+      workflowActions: {}
+    },
+    {
+      id: 'EMP-004', name: 'Deepak V', email: 'deepak.v@cryoerp.com', phone: '+91 98401 44004',
+      designation: 'Logistics Coordinator', accountStatus: 'Inactive', isLastAdmin: false,
+      accountCreated: '2026-09-15', lastLogin: '2026-11-02 05:15 PM', pwdResetRequired: false,
+      accessType: 'Role Based',
+      departments: ['Logistics Management'],
+      deptRoles: { 'Logistics Management': 'Standard Access' },
+      permissions: {}, workflowActions: {}
+    }
+  ],
+
+  // Read-only Access Activity Logs (Zero passwords/tokens stored)
+  activityLogs: [
+    { id: 'LOG-01', type: 'Permissions updated', desc: 'Granted Sales (Quotations: Send) & Production (View Only)', target: 'Arun Kumar (EMP-001)', by: 'Priya Nair', time: '2026-11-20 10:15 AM', prev: 'Sales: View Only', next: 'Sales: Standard + Send Quotation; Production: View Only' },
+    { id: 'LOG-02', type: 'Department assigned', desc: 'Assigned Production Management (View Only)', target: 'Arun Kumar (EMP-001)', by: 'Priya Nair', time: '2026-11-19 04:20 PM', prev: 'Sales Management', next: 'Sales Management, Production Management' },
+    { id: 'LOG-03', type: 'Employee created', desc: 'Created employee record (login pending)', target: 'Karthik R (EMP-003)', by: 'Priya Nair', time: '2026-11-18 11:05 AM', prev: '—', next: 'EMP-003 • Supply Chain Management' },
+    { id: 'LOG-04', type: 'Account deactivated', desc: 'Deactivated login account & revoked sessions', target: 'Deepak V (EMP-004)', by: 'Priya Nair', time: '2026-11-10 06:00 PM', prev: 'Active', next: 'Inactive (Records preserved)' }
+  ]
+};
+
+/* ---------- HELPERS ---------- */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const getEmp = (id) => state.employees.find((e) => e.id === id) || state.employees[0];
+const getDept = (id) => state.departments.find((d) => d.id === id) || state.departments[0];
+const getRole = (id) => state.roles.find((r) => r.id === id) || state.roles[0];
+const getLog = (id) => state.activityLogs.find((l) => l.id === id) || state.activityLogs[0];
+
+function addAuditLog(type, desc, target, prev, next) {
+  state.activityLogs.unshift({ id: `LOG-0${state.activityLogs.length + 1}`, type, desc, target, by: 'Priya Nair', time: '2026-11-20 Just now', prev, next });
+}
+
+function badgeHTML(status) {
+  const map = {
+    'Active': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Inactive': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Login Not Created': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Password Reset Required': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Role Based': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Custom Permissions': 'bg-purple-50 text-purple-700 border-purple-200',
+    'Mixed Access': 'bg-indigo-50 text-indigo-700 border-indigo-200'
+  };
+  return `<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full border ${map[status] || 'bg-slate-100 text-slate-700 border-slate-200'} whitespace-nowrap">${esc(status)}</span>`;
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('phoneToast');
+  if (!el) return;
+  const cls = type === 'error' ? 'bg-rose-600 text-white' : type === 'warning' ? 'bg-amber-600 text-white' : 'bg-[#1E3A8A] text-white';
+  el.className = `toast-bar rounded-xl px-3.5 py-2.5 text-xs font-medium shadow-lg flex items-center gap-2 ${cls}`;
+  el.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 shrink-0"></i><span class="flex-1">${esc(msg)}</span>`;
+  el.classList.remove('hidden');
+  lucide.createIcons({ nodes: [el] });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+function navigate(screenId, opts = {}) {
+  if (opts.key && opts.val) state.selected[opts.key] = opts.val;
+  if (!opts.skipHistory && state.screen !== screenId) {
+    state.history.push(state.screen);
+    if (state.history.length > 25) state.history.shift();
+  }
+  state.activeSheet = null;
+  state.screen = screenId;
+  if (screenId === 'toggle-account-sheet') state.activeSheet = { type: 'toggle-acc', empId: state.selected.empId };
+  state.viewMode = 'phone';
+  renderAll();
+}
+
+function goBack(fallback = 'dashboard') {
+  state.activeSheet = null;
+  state.screen = state.history.length ? state.history.pop() : fallback;
+  renderAll();
+}
+
+/* ---------- SHARED CHROME ---------- */
+function renderTopBar(title, opts = {}) {
+  const back = opts.back ? `<button type="button" data-action="go-back" data-fallback="${opts.fallback || 'dashboard'}" class="p-1.5 -ml-1.5 rounded-lg text-slate-700 hover:bg-slate-100"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '';
+  return `<div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 shrink-0"><div class="flex items-center gap-2 min-w-0">${back}<h1 class="text-[15px] font-semibold text-slate-900 truncate">${esc(title)}</h1></div><div class="flex items-center gap-1.5 shrink-0">${opts.right || ''}</div></div>`;
+}
+
+function renderBottomNav(active) {
+  const tabs = [['home', 'Home', 'home', 'dashboard'], ['employees', 'Employees', 'users', 'employees-list'], ['departments', 'Depts', 'building-2', 'departments-list'], ['access', 'Access', 'shield-check', 'permissions-hub'], ['more', 'More', 'grid', 'more']];
+  return `<nav class="bg-white border-t border-slate-200 px-1 pt-1.5 pb-2 grid grid-cols-5 shrink-0">${tabs.map(([id, lbl, ic, sc]) => `<button type="button" data-nav="${sc}" class="flex flex-col items-center justify-center gap-0.5 py-0.5 rounded-lg ${id === active ? 'text-[#1E3A8A] font-semibold' : 'text-slate-500 hover:text-slate-800'}"><i data-lucide="${ic}" class="w-4.5 h-4.5 ${id === active ? 'stroke-[2.3]' : ''}"></i><span class="text-[10px]">${lbl}</span></button>`).join('')}</nav>`;
+}
+
+function renderStickyAction(html) {
+  return `<div class="bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-2.5 shrink-0">${html}</div>`;
+}
+
+/* ==========================================================================
+   SCREEN RENDERERS (SECTIONS 5–40)
+   ========================================================================== */
+
+// 5. DASHBOARD
+function renderDashboard() {
+  const total = state.employees.length;
+  const active = state.employees.filter((e) => e.accountStatus === 'Active').length;
+  const inactive = state.employees.filter((e) => e.accountStatus === 'Inactive').length;
+
+  return `
+    <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <div><div class="text-[11px] font-medium text-[#1D4ED8] uppercase tracking-wide">Cryo ERP • Employee Management</div><div class="text-base font-semibold text-slate-900">Hello, Priya</div></div>
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-nav="activity-logs" class="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700" aria-label="Activity Logs"><i data-lucide="bell" class="w-4 h-4"></i></button>
+        <button type="button" data-nav="profile" class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold flex items-center justify-center">PN</button>
+      </div>
+    </div>
+
+    <div class="phone-scroll p-3.5 space-y-4">
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" data-nav="employees-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Total Employees</span><i data-lucide="users" class="w-4 h-4 text-[#1D4ED8]"></i></div><div class="text-xl font-bold">${total}</div></button>
+        <button type="button" data-nav="accounts-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Active Accounts</span><i data-lucide="user-check" class="w-4 h-4 text-emerald-600"></i></div><div class="text-xl font-bold">${active}</div></button>
+        <button type="button" data-nav="departments-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Departments</span><i data-lucide="building-2" class="w-4 h-4 text-[#1E3A8A]"></i></div><div class="text-xl font-bold">${state.departments.length}</div></button>
+        <button type="button" data-nav="accounts-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]"><div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Inactive Accounts</span><i data-lucide="user-x" class="w-4 h-4 text-rose-500"></i></div><div class="text-xl font-bold">${inactive}</div></button>
+      </div>
+
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Quick Actions</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-nav="add-employee" class="bg-[#1E3A8A] text-white rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="user-plus" class="w-4 h-4"></i><span>Add Employee</span></button>
+          <button type="button" data-nav="add-department" class="bg-white border border-slate-200 text-slate-800 rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="building-2" class="w-4 h-4 text-[#1E3A8A]"></i><span>Add Dept</span></button>
+          <button type="button" data-nav="configure-permissions" class="bg-white border border-slate-200 text-slate-800 rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="shield-check" class="w-4 h-4 text-[#1E3A8A]"></i><span>Permissions</span></button>
+        </div>
+      </div>
+
+      <!-- Simple Onboarding Flow Strip -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+        <div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-800">Access Setup Flow</span><span class="text-[10px] font-medium text-[#1D4ED8]">Step 1 → 4</span></div>
+        <div class="grid grid-cols-4 gap-1 text-center">
+          <button type="button" data-nav="add-employee" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">1</div><div class="text-[10px] font-medium">Create</div></button>
+          <button type="button" data-nav="assign-departments" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">2</div><div class="text-[10px] font-medium">Depts</div></button>
+          <button type="button" data-nav="configure-permissions" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">3</div><div class="text-[10px] font-medium">Access</div></button>
+          <button type="button" data-nav="common-login" class="p-1.5 rounded-lg bg-emerald-50"><div class="text-xs font-bold text-emerald-700">4</div><div class="text-[10px] font-medium text-emerald-800">Login</div></button>
+        </div>
+      </div>
+
+      <!-- Department Overview -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase mb-2">Department Overview</div>
+        <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">
+          ${state.departments.map((d) => {
+            const cnt = state.employees.filter((e) => e.departments.includes(d.name)).length;
+            return `<button type="button" data-open="department-details" data-key="deptId" data-val="${d.id}" class="w-full px-3.5 py-2.5 flex justify-between items-center hover:bg-slate-50"><span class="font-medium text-slate-800">${esc(d.name)}</span><span class="px-2 py-0.5 rounded-full bg-blue-50 text-[#1D4ED8] font-semibold">${cnt}</span></button>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div>
+        <div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-slate-500 uppercase">Recent Activity</span><button type="button" data-nav="activity-logs" class="text-xs font-medium text-[#1D4ED8]">View All</button></div>
+        <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">
+          ${state.activityLogs.slice(0, 3).map((l) => `<button type="button" data-open="activity-details" data-key="logId" data-val="${l.id}" class="w-full px-3 py-2.5 text-left hover:bg-slate-50"><div class="font-semibold text-slate-900">${esc(l.type)} — ${esc(l.target)}</div><div class="text-[11px] text-slate-500">${esc(l.desc)}</div></button>`).join('')}
+        </div>
+      </div>
+    </div>
+    ${renderBottomNav('home')}
+  `;
+}
+
+// 6. EMPLOYEES LIST
+function renderEmployeesList() {
+  const q = state.filters.empSearch.trim().toLowerCase();
+  const list = state.employees.filter((e) => (state.filters.empStatus === 'All' || e.accountStatus === state.filters.empStatus) && (!q || `${e.name} ${e.id} ${e.email} ${e.phone}`.toLowerCase().includes(q)));
+  return `
+    ${renderTopBar('Employees', { right: `<button type="button" data-nav="add-employee" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>` })}
+    <div class="bg-white border-b border-slate-200 px-3.5 pt-2.5 pb-2 space-y-2 shrink-0">
+      <input data-filter="empSearch" value="${esc(state.filters.empSearch)}" type="text" placeholder="Search name, EMP ID, email..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" />
+      <div class="flex gap-1.5 overflow-x-auto no-scrollbar">${['All', 'Active', 'Inactive', 'Login Not Created'].map((st) => `<button type="button" data-filter-tab="empStatus" data-val="${st}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${state.filters.empStatus === st ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${st}</button>`).join('')}</div>
+    </div>
+    <div class="phone-scroll p-3.5">
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b text-[11px] text-slate-500"><tr><th class="py-2 px-3">Employee</th><th class="py-2 px-2">Depts</th><th class="py-2 px-2 text-right">Status</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            ${list.map((e) => `<tr class="hover:bg-slate-50 cursor-pointer" data-open="employee-details" data-key="empId" data-val="${e.id}"><td class="py-2.5 px-3"><div class="font-semibold text-slate-900">${esc(e.name)}</div><div class="text-[10px] text-slate-400">${esc(e.id)} • ${esc(e.email)}</div></td><td class="py-2.5 px-2 text-[11px] text-slate-600">${e.departments.length}</td><td class="py-2.5 px-2 text-right">${badgeHTML(e.accountStatus)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${renderBottomNav('employees')}
+  `;
+}
+
+// 7 & 9. ADD / EDIT EMPLOYEE (Minimal fields — Zero HR/DOB/Aadhaar/Salary!)
+function renderEmployeeForm(isEdit = false) {
+  const e = isEdit ? getEmp(state.selected.empId) : { name: '', email: '', phone: '', designation: '', departments: ['Sales Management'], accountStatus: 'Active' };
+  return `
+    ${renderTopBar(isEdit ? `Edit ${e.id}` : 'Add Employee', { back: true, fallback: 'employees-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs">
+        <div class="font-semibold text-[#1E3A8A] uppercase">Employee Information</div>
+        <div><label class="block font-medium mb-1">Employee Name *</label><input id="eName" type="text" value="${esc(e.name)}" placeholder="e.g., Arun Kumar" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block font-medium mb-1">Email Address *</label><input id="eEmail" type="email" value="${esc(e.email)}" placeholder="arun@example.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-medium mb-1">Phone (Optional)</label><input id="ePhone" type="tel" value="${esc(e.phone)}" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+          <div><label class="block font-medium mb-1">Designation</label><input id="eDesig" type="text" value="${esc(e.designation)}" placeholder="Sales Executive" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        </div>
+      </div>
+
+      ${!isEdit ? `
+        <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+          <div class="flex justify-between items-center"><span class="font-semibold text-[#1E3A8A] uppercase">Assign Departments</span><button type="button" data-nav="add-department" class="text-[#1D4ED8] font-semibold">+ New Dept</button></div>
+          ${state.departments.map((d) => `<label class="flex items-center gap-2 py-1"><input type="checkbox" name="eDepts" value="${esc(d.name)}" ${d.name === 'Sales Management' ? 'checked' : ''} class="rounded text-[#1E3A8A]" /><span>${esc(d.name)}</span></label>`).join('')}
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs">
+          <div class="flex justify-between items-center"><span class="font-semibold text-[#1E3A8A] uppercase">Login Account</span><label class="flex items-center gap-1.5 font-medium"><input id="eEnableLogin" type="checkbox" checked />Enable Login</label></div>
+          <div class="flex gap-2">
+            <input id="eTempPwd" type="text" value="${esc(state.tempGeneratedPwd || 'Cryo@2026#9x')}" class="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-[11px]" />
+            <button type="button" data-action="gen-pwd" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">Generate</button>
+          </div>
+          <label class="flex items-center gap-2 text-[11px] text-slate-600"><input type="checkbox" checked />Require password change on first login</label>
+        </div>
+      ` : ''}
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-emp" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Create Employee'}</button>`)}
+  `;
+}
+
+// 8. EMPLOYEE DETAILS (Overview / Permissions / Login Account tabs — NEVER shows password)
+function renderEmployeeDetails() {
+  const e = getEmp(state.selected.empId);
+  const tab = state.selected.empDetailTab;
+  return `
+    ${renderTopBar(e.id, { back: true, fallback: 'employees-list', right: `<button type="button" data-nav="edit-employee" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-[#1E3A8A] text-white font-bold text-sm flex items-center justify-center shrink-0">${esc(e.name.split(' ').map((x) => x[0]).join(''))}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-center"><strong class="text-sm text-slate-900 truncate">${esc(e.name)}</strong>${badgeHTML(e.accountStatus)}</div>
+          <div class="text-xs text-slate-500 truncate">${esc(e.designation)} • ${esc(e.email)}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 bg-white border border-slate-200 rounded-xl p-1 text-xs font-medium">
+        ${['Overview', 'Permissions', 'Login Account'].map((t) => `<button type="button" data-action="set-emp-tab" data-val="${t}" class="py-1.5 rounded-lg ${tab === t ? 'bg-[#1E3A8A] text-white' : 'text-slate-600'}">${t === 'Login Account' ? 'Account' : t}</button>`).join('')}
+      </div>
+
+      ${tab === 'Overview' ? `
+        <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2">
+          <div class="flex justify-between"><span class="text-slate-500">Phone</span><strong>${esc(e.phone || '—')}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-500">Access Type</span>${badgeHTML(e.accessType)}</div>
+          <div class="pt-2 border-t space-y-1.5">
+            <div class="font-semibold text-slate-500 uppercase">Assigned Departments</div>
+            ${e.departments.map((d) => `<div class="flex justify-between bg-slate-50 rounded-lg px-2.5 py-1.5"><strong>${esc(d)}</strong><span class="text-[#1D4ED8]">${esc(e.deptRoles[d] || 'Custom')}</span></div>`).join('')}
+          </div>
+          <button type="button" data-nav="assign-departments" class="w-full py-2 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold mt-1">Manage Departments</button>
+        </div>
+      ` : tab === 'Permissions' ? `
+        <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2.5">
+          ${e.departments.map((d) => {
+            const pObj = e.permissions[d] || {};
+            const scs = Object.keys(pObj).filter((k) => pObj[k].view);
+            return `<div class="bg-slate-50 rounded-lg p-2.5 space-y-1"><div class="font-semibold text-[#1E3A8A]">${esc(d)} (${esc(e.deptRoles[d] || 'Custom')})</div><div class="text-[11px] text-slate-600">${scs.length ? scs.join(', ') : 'No screens enabled'}</div></div>`;
+          }).join('')}
+          <button type="button" data-nav="configure-permissions" class="w-full py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">Configure Screen & Action Permissions</button>
+        </div>
+      ` : `
+        <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2">
+          <div class="flex justify-between"><span class="text-slate-500">Login Email</span><strong>${esc(e.email)}</strong></div>
+          <div class="flex justify-between"><span class="text-slate-500">Status</span>${badgeHTML(e.accountStatus)}</div>
+          <div class="flex justify-between"><span class="text-slate-500">Last Login</span><strong>${esc(e.lastLogin)}</strong></div>
+          <div class="text-[11px] text-slate-400">Stored passwords are never displayed.</div>
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button type="button" data-nav="reset-password" class="py-2 rounded-lg bg-slate-100 font-semibold">Reset Password</button>
+            <button type="button" data-action="open-sheet" data-sheet="toggle-acc" class="py-2 rounded-lg ${e.accountStatus === 'Active' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-600 text-white'} font-semibold">${e.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}</button>
+          </div>
+        </div>
+      `}
+    </div>
+    ${renderStickyAction(`<button type="button" data-nav="assign-role" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Assign Role</button><button type="button" data-nav="configure-permissions" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Manage Permissions</button>`)}
+  `;
+}
+
+// 10. ASSIGN DEPARTMENTS SCREEN
+function renderAssignDepartments() {
+  const e = getEmp(state.selected.empId);
+  return `
+    ${renderTopBar('Assign Departments', { back: true, fallback: 'employee-details' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong>${esc(e.name)} (${esc(e.id)})</strong><div class="text-slate-600">Assigning a department makes it eligible — permissions are configured separately.</div></div>
+      <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">
+        ${state.departments.map((d) => {
+          const has = e.departments.includes(d.name);
+          return `<label class="px-3.5 py-3 flex items-center justify-between cursor-pointer"><div class="flex items-center gap-2.5"><input type="checkbox" name="assignDept" value="${esc(d.name)}" ${has ? 'checked' : ''} class="rounded text-[#1E3A8A]" /><div><div class="font-semibold text-slate-900">${esc(d.name)}</div><div class="text-[11px] text-slate-500">${has ? `Role: ${e.deptRoles[d.name] || 'Standard Access'}` : 'Not assigned'}</div></div></div>${has ? badgeHTML('Active') : ''}</label>`;
+        }).join('')}
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-assign-depts" data-id="${e.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Department Access</button>`)}
+  `;
+}
+
+// 11–14. DEPARTMENTS MANAGEMENT
+function renderDepartmentsList() {
+  return `${renderTopBar('Departments', { right: `<button type="button" data-nav="add-department" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>` })}<div class="phone-scroll p-3.5 space-y-2.5">${state.departments.map((d) => {
+    const cnt = state.employees.filter((e) => e.departments.includes(d.name)).length;
+    return `<button type="button" data-open="department-details" data-key="deptId" data-val="${d.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center hover:border-[#1D4ED8]"><div><div class="text-sm font-semibold text-slate-900">${esc(d.name)}</div><div class="text-xs text-slate-500">${esc(d.code)} • ${cnt} assigned employee(s)</div></div>${badgeHTML(d.status)}</button>`;
+  }).join('')}</div>${renderBottomNav('departments')}`;
+}
+function renderDeptForm(isEdit = false) {
+  const d = isEdit ? getDept(state.selected.deptId) : { name: '', code: '', desc: '', module: 'Sales Management', status: 'Active' };
+  const cnt = isEdit ? state.employees.filter((e) => e.departments.includes(d.name)).length : 0;
+  return `${renderTopBar(isEdit ? 'Edit Department' : 'Add Department', { back: true, fallback: 'departments-list' })}<div class="phone-scroll p-3.5 space-y-3">${isEdit && cnt > 0 ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">Warning: ${cnt} employee(s) are assigned to this department. Deactivating revokes their access.</div>` : ''}<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div><label class="block font-medium mb-1">Department Name *</label><input id="dName" type="text" value="${esc(d.name)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Linked ERP Module *</label><select id="dMod" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${Object.keys(DEPT_SCREENS).map((m) => `<option ${d.module === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div><div><label class="block font-medium mb-1">Description (Optional)</label><textarea id="dDesc" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${esc(d.desc)}</textarea></div><div><label class="block font-medium mb-1">Status</label><select id="dStat" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option ${d.status === 'Active' ? 'selected' : ''}>Active</option><option ${d.status === 'Inactive' ? 'selected' : ''}>Inactive</option></select></div></div></div>${renderStickyAction(`<button type="button" data-action="save-dept" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Save Department'}</button>`)}`;
+}
+function renderDeptDetails() {
+  const d = getDept(state.selected.deptId);
+  const emps = state.employees.filter((e) => e.departments.includes(d.name));
+  return `${renderTopBar(d.name, { back: true, fallback: 'departments-list', right: `<button type="button" data-nav="edit-department" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="flex justify-between"><strong class="text-sm">${esc(d.name)} (${esc(d.code)})</strong>${badgeHTML(d.status)}</div><div class="text-slate-600">Linked Module: <strong>${esc(d.module)}</strong></div><div class="text-slate-500">${esc(d.desc)}</div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs"><div class="font-semibold text-slate-500 uppercase">Assigned Employees (${emps.length})</div>${emps.map((e) => `<button type="button" data-open="employee-details" data-key="empId" data-val="${e.id}" class="w-full flex justify-between items-center bg-slate-50 rounded-lg p-2.5"><div><div class="font-semibold">${esc(e.name)}</div><div class="text-[11px] text-slate-500">${esc(e.designation)} • ${esc(e.deptRoles[d.name] || 'Custom')}</div></div>${badgeHTML(e.accountStatus)}</button>`).join('')}</div></div>`;
+}
+
+// 15–19. ROLES MANAGEMENT
+function renderRolesList() {
+  return `${renderTopBar('Roles', { back: true, fallback: 'permissions-hub', right: `<button type="button" data-nav="create-role" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Create</button>` })}<div class="phone-scroll p-3.5 space-y-2.5">${state.roles.map((r) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between items-start"><div><div class="text-sm font-semibold text-slate-900">${esc(r.name)}</div><div class="text-slate-500">${esc(r.summary)}</div></div>${badgeHTML(r.status)}</div><div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-100"><button type="button" data-open="role-details" data-key="roleId" data-val="${r.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">View</button><button type="button" data-open="edit-role" data-key="roleId" data-val="${r.id}" class="py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-medium">Edit</button><button type="button" data-nav="assign-role" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Assign</button></div></div>`).join('')}</div>${renderBottomNav('access')}`;
+}
+function renderRoleForm(isEdit = false) {
+  const r = isEdit ? getRole(state.selected.roleId) : { name: '', desc: '', depts: ['Sales Management'] };
+  return `${renderTopBar(isEdit ? 'Edit Role' : 'Create Role', { back: true, fallback: 'roles-list' })}<div class="phone-scroll p-3.5 space-y-3">${isEdit ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">Updating this role affects all employees assigned to "${esc(r.name)}" and will be recorded in Activity Logs.</div>` : ''}<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Role Name *</label><input id="rName" type="text" value="${esc(r.name)}" placeholder="e.g., Sales Standard Access" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Description</label><textarea id="rDesc" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${esc(r.desc)}</textarea></div><div class="flex gap-1.5 pt-1"><button type="button" data-action="toast" data-msg="Selected all permissions" class="px-2.5 py-1 rounded bg-blue-50 text-[#1D4ED8] font-semibold">Select All</button><button type="button" data-action="toast" data-msg="Applied View Only preset" class="px-2.5 py-1 rounded bg-slate-100 font-semibold">View Only</button><button type="button" data-action="toast" data-msg="Cleared checkboxes" class="px-2.5 py-1 rounded bg-slate-100 font-semibold">Clear All</button></div></div></div>${renderStickyAction(`<button type="button" data-action="save-role" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Update Role' : 'Save Role'}</button>`)}`;
+}
+function renderRoleDetails() {
+  const r = getRole(state.selected.roleId);
+  return `${renderTopBar('Role Details', { back: true, fallback: 'roles-list', right: `<button type="button" data-nav="edit-role" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5"><div class="flex justify-between"><strong class="text-sm">${esc(r.name)}</strong>${badgeHTML(r.status)}</div><div class="text-slate-600">${esc(r.desc)}</div><div class="text-slate-500">Summary: ${esc(r.summary)}</div></div></div>${renderStickyAction(`<button type="button" data-nav="assign-role" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Assign Role to Employee</button>`)}`;
+}
+function renderAssignRole() {
+  const e = getEmp(state.selected.empId);
+  return `${renderTopBar('Assign Role', { back: true, fallback: 'employee-details' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong>${esc(e.name)} (${esc(e.id)})</strong><div class="text-slate-600">Set an independent permission role for each assigned department.</div></div>${e.departments.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs"><label class="block font-semibold text-slate-900">${esc(d)}</label><select data-dept-role="${esc(d)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${state.roles.map((r) => `<option ${e.deptRoles[d] === r.name ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select></div>`).join('')}</div>${renderStickyAction(`<button type="button" data-action="save-assign-role" data-id="${e.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Assign Role</button>`)}`;
+}
+
+// 20–23. PERMISSIONS HUB, MATRIX & REVIEW
+function renderPermissionsHub() {
+  return `${renderTopBar('Access & Permissions')}<div class="phone-scroll p-3.5 space-y-2.5">${[['Roles', 'Reusable permission templates', state.roles.length, 'roles-list', 'award'], ['Employee Permissions', 'Screen & action permission matrices', state.employees.length, 'emp-permissions-list', 'sliders'], ['Login Accounts', 'Activate, deactivate & reset passwords', state.employees.length, 'accounts-list', 'key-round']].map(([t, d, c, sc, ic]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center text-left hover:border-[#1D4ED8]"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><strong class="text-base text-[#1E3A8A]">${c}</strong></button>`).join('')}<button type="button" data-nav="configure-permissions" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Quick Configure: Arun Kumar (EMP-001)</button></div>${renderBottomNav('access')}`;
+}
+function renderEmpPermissionsList() {
+  return `${renderTopBar('Employee Permissions', { back: true, fallback: 'permissions-hub' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.employees.map((e) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><div class="text-sm font-semibold">${esc(e.name)} (${esc(e.id)})</div><div class="text-slate-500">${e.departments.join(', ')}</div></div>${badgeHTML(e.accessType)}</div><button type="button" data-open="configure-permissions" data-key="empId" data-val="${e.id}" class="w-full py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">Configure Permissions</button></div>`).join('')}</div>${renderBottomNav('access')}`;
+}
+function renderConfigurePermissions() {
+  const e = getEmp(state.selected.empId);
+  const dept = e.departments.includes(state.selected.permDeptTab) ? state.selected.permDeptTab : (e.departments[0] || 'Sales Management');
+  const screens = DEPT_SCREENS[dept] || [];
+  const pMap = e.permissions[dept] || {};
+  const wfActs = DEPT_WORKFLOW_ACTIONS[dept] || [];
+  const empWf = (e.workflowActions && e.workflowActions[dept]) || [];
+
+  return `
+    ${renderTopBar('Configure Permissions', { back: true, fallback: 'emp-permissions-list' })}
+    <div class="bg-white border-b border-slate-200 px-3.5 py-2 space-y-2 shrink-0">
+      <div class="text-xs font-semibold text-slate-900">${esc(e.name)} (${esc(e.id)}) • ${esc(e.deptRoles[dept] || 'Custom')}</div>
+      <div class="flex gap-1.5 overflow-x-auto no-scrollbar">${e.departments.map((d) => `<button type="button" data-action="set-perm-dept" data-val="${esc(d)}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${dept === d ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${esc(d.replace(' Management', ''))}</button>`).join('')}</div>
+      <div class="flex gap-1.5 text-[11px]">
+        <button type="button" data-action="perm-preset" data-val="all" data-dept="${esc(dept)}" class="px-2 py-1 rounded bg-blue-50 text-[#1D4ED8] font-semibold">Select All</button>
+        <button type="button" data-action="perm-preset" data-val="view" data-dept="${esc(dept)}" class="px-2 py-1 rounded bg-slate-100 font-semibold">View Only</button>
+        <button type="button" data-action="perm-preset" data-val="clear" data-dept="${esc(dept)}" class="px-2 py-1 rounded bg-slate-100 font-semibold">Clear All</button>
+      </div>
+    </div>
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-[11px]">
+          <thead class="bg-slate-50 border-b text-slate-500"><tr><th class="py-2 px-2.5">Screen</th><th class="py-2 px-1 text-center">View</th><th class="py-2 px-1 text-center">Add</th><th class="py-2 px-1 text-center">Edit</th><th class="py-2 px-1 text-center">Proc</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            ${screens.map((sc) => {
+              const p = pMap[sc] || { view: false, create: false, edit: false, process: false };
+              return `<tr><td class="py-2 px-2.5 font-medium text-slate-800">${esc(sc)}</td>${['view', 'create', 'edit', 'process'].map((k) => `<td class="py-2 px-1 text-center"><input type="checkbox" data-pm-dept="${esc(dept)}" data-pm-sc="${esc(sc)}" data-pm-k="${k}" ${p[k] ? 'checked' : ''} class="rounded text-[#1E3A8A]" /></td>`).join('')}</tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs">
+        <div class="font-semibold text-slate-500 uppercase text-[11px]">Workflow Action Permissions</div>
+        ${wfActs.map((a) => `<label class="flex items-center gap-2 py-0.5"><input type="checkbox" data-wf-dept="${esc(dept)}" value="${esc(a)}" ${empWf.includes(a) ? 'checked' : ''} class="rounded text-[#1E3A8A]" /><span>${esc(a)}</span></label>`).join('')}
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-nav="permission-review" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Review & Save Permissions</button>`)}
+  `;
+}
+function renderPermissionReview() {
+  const e = getEmp(state.selected.empId);
+  return `${renderTopBar('Permission Review', { back: true, fallback: 'configure-permissions' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="font-semibold text-sm">${esc(e.name)} (${esc(e.id)})</div><div class="text-slate-600">Departments: <strong>${e.departments.join(', ')}</strong></div><div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-emerald-800"><strong>Updated Access:</strong> Permissions synchronized with screen & workflow action controls.</div><div class="text-[11px] text-slate-500">All changes will be recorded in Activity Logs.</div></div></div>${renderStickyAction(`<button type="button" data-nav="configure-permissions" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Edit</button><button type="button" data-action="confirm-perms" data-id="${e.id}" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirm Changes</button>`)}`;
+}
+
+// 24–30. LOGIN ACCOUNTS & ACTIVITY LOGS
+function renderAccountsList() {
+  return `${renderTopBar('Login Accounts', { back: true, fallback: 'permissions-hub', right: `<button type="button" data-nav="create-account" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Create</button>` })}<div class="phone-scroll p-3.5 space-y-2.5">${state.employees.map((e) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between items-start"><div><div class="text-sm font-semibold">${esc(e.name)}</div><div class="text-slate-500">${esc(e.email)}</div></div>${badgeHTML(e.accountStatus)}</div><div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-open="account-details" data-key="empId" data-val="${e.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">View Account</button>${e.accountStatus === 'Login Not Created' ? `<button type="button" data-open="create-account" data-key="empId" data-val="${e.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Create Account</button>` : `<button type="button" data-open="reset-password" data-key="empId" data-val="${e.id}" class="py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-medium">Reset Pwd</button>`}</div></div>`).join('')}</div>${renderBottomNav('access')}`;
+}
+function renderCreateAccount() {
+  const eligible = state.employees.filter((e) => e.accountStatus === 'Login Not Created');
+  const target = eligible[0] || getEmp('EMP-003');
+  return `${renderTopBar('Create Login Account', { back: true, fallback: 'accounts-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs"><div><label class="block font-medium mb-1">Employee Without Login</label><select id="caEmp" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${(eligible.length ? eligible : [target]).map((e) => `<option value="${e.id}">${esc(e.name)} (${esc(e.email)})</option>`).join('')}</select></div><div><label class="block font-medium mb-1">Temporary Password</label><div class="flex gap-2"><input id="caPwd" type="text" value="Cryo@2026#7m" class="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono" /><button type="button" data-action="gen-pwd" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">Generate</button></div></div><label class="flex items-center gap-2"><input type="checkbox" checked />Require password change on first login</label></div></div>${renderStickyAction(`<button type="button" data-action="save-create-acc" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Create Login Account</button>`)}`;
+}
+function renderAccountDetails() {
+  const e = getEmp(state.selected.empId);
+  return `${renderTopBar('Login Account Details', { back: true, fallback: 'accounts-list' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(e.name)} (${esc(e.id)})</strong>${badgeHTML(e.accountStatus)}</div><div>Login Email: <strong>${esc(e.email)}</strong></div><div>Last Login: ${esc(e.lastLogin)}</div><div>Assigned Depts: <strong>${e.departments.join(', ')}</strong></div><div class="text-[11px] text-slate-400">Passwords and tokens are securely hashed and never shown.</div></div><div class="space-y-2"><button type="button" data-nav="reset-password" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">Reset Password</button><button type="button" data-action="toast" data-msg="Active sessions revoked for ${esc(e.name)}" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">Revoke Active Sessions</button><button type="button" data-action="open-sheet" data-sheet="toggle-acc" class="w-full py-2.5 rounded-xl ${e.accountStatus === 'Active' ? 'bg-rose-50 border border-rose-200 text-rose-700' : 'bg-emerald-600 text-white'} text-xs font-semibold">${e.accountStatus === 'Active' ? 'Deactivate Account' : 'Activate Account'}</button></div></div>`;
+}
+function renderResetPassword() {
+  const e = getEmp(state.selected.empId);
+  return `${renderTopBar('Reset Password', { back: true, fallback: 'account-details' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-3"><div><strong>${esc(e.name)}</strong><div class="text-slate-500">${esc(e.email)}</div></div><label class="flex items-center gap-2 p-2.5 rounded-lg border border-[#1D4ED8] bg-blue-50/50"><input type="radio" name="rpMode" checked /><span>Send Password Reset Link via Email</span></label><label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200"><input type="radio" name="rpMode" /><span>Generate Temporary Password (Require change on next login)</span></label></div></div>${renderStickyAction(`<button type="button" data-action="confirm-reset-pwd" data-id="${e.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Confirm Password Reset</button>`)}`;
+}
+function renderActivityLogs() {
+  return `${renderTopBar('Activity Logs', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-2">${state.activityLogs.map((l) => `<button type="button" data-open="activity-details" data-key="logId" data-val="${l.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 space-y-1 text-xs"><div class="flex justify-between"><span class="font-semibold text-[#1D4ED8]">${esc(l.type)}</span><span class="text-[10px] text-slate-400">${esc(l.time)}</span></div><div class="font-semibold text-slate-900">${esc(l.target)}</div><div class="text-slate-600">${esc(l.desc)}</div><div class="text-[10px] text-slate-400">Changed by ${esc(l.by)}</div></button>`).join('')}</div>`;
+}
+function renderActivityDetails() {
+  const l = getLog(state.selected.logId);
+  return `${renderTopBar('Activity Details', { back: true, fallback: 'activity-logs' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-xs space-y-2.5"><div class="font-bold text-[#1E3A8A] text-sm">${esc(l.type)}</div><div><strong>Affected Record:</strong> ${esc(l.target)}</div><div><strong>Changed By:</strong> ${esc(l.by)} • ${esc(l.time)}</div><div class="bg-slate-50 rounded-lg p-2.5"><strong>Previous Value:</strong> ${esc(l.prev)}</div><div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-emerald-800"><strong>Updated Value:</strong> ${esc(l.next)}</div><div class="text-[10px] text-slate-400">Read-only audit record. Passwords & tokens are never logged.</div></div></div>`;
+}
+
+// 31–36. COMMON LOGIN, FIRST LOGIN PWD, FORGOT PWD, DEPT SELECTION, SWITCH DEPT, PERMISSION DENIED
+function renderCommonLogin() {
+  return `<div class="phone-scroll p-5 flex flex-col justify-center space-y-5 bg-white">
+    <div class="text-center space-y-1.5"><div class="w-12 h-12 rounded-2xl bg-[#1E3A8A] text-white font-bold text-xl flex items-center justify-center mx-auto">C</div><h1 class="text-lg font-bold text-slate-900">Cryo Enterprise ERP</h1><p class="text-xs text-slate-500">Sign in with your single Cryo employee account</p></div>
+    <div class="space-y-3 text-xs">
+      <div><label class="block font-medium mb-1">Email Address</label><input id="lgEmail" type="email" value="arun@example.com" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" /></div>
+      <div><label class="block font-medium mb-1">Password</label><div class="relative"><input id="lgPwd" type="${state.showLoginPwd ? 'text' : 'password'}" value="••••••••••" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl pr-12" /><button type="button" data-action="toggle-pwd-vis" class="absolute right-3 top-2.5 text-[#1D4ED8] font-semibold">${state.showLoginPwd ? 'Hide' : 'Show'}</button></div></div>
+      <div class="text-right"><button type="button" data-nav="forgot-password" class="text-[#1D4ED8] font-medium">Forgot Password?</button></div>
+      <button type="button" data-nav="dept-selection" class="w-full py-3 rounded-xl bg-[#1E3A8A] text-white font-semibold text-sm">Login</button>
+    </div>
+    <div class="text-[11px] text-center text-slate-400">Assigned departments & permissions load automatically — no role selection required.</div>
+  </div>`;
+}
+function renderFirstLoginPwd() {
+  return `${renderTopBar('Change Temporary Password', { back: true, fallback: 'common-login' })}<div class="phone-scroll p-4 space-y-3 text-xs"><div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-[#1E3A8A]">Set a new password before accessing Cryo ERP modules.</div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5"><div><label class="block font-medium mb-1">Temporary Password</label><input type="password" value="••••••••" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">New Password</label><input type="password" placeholder="Min 8 chars, 1 uppercase, 1 number" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Confirm New Password</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-nav="dept-selection" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Change Password & Continue</button>`)}`;
+}
+function renderForgotPassword() {
+  return `${renderTopBar('Forgot Password', { back: true, fallback: 'common-login' })}<div class="phone-scroll p-4 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3"><div class="text-slate-600">Enter your registered login email to receive a password reset link.</div><input type="email" value="arun@example.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /><button type="button" data-action="toast" data-msg="If an account exists, a reset link has been sent." class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white font-semibold">Send Reset Link</button></div></div>`;
+}
+function renderDeptSelection() {
+  const arun = getEmp('EMP-001'); // Exact Section 42: ONLY Sales & Production shown!
+  return `${renderTopBar('Select Department', { back: true, fallback: 'common-login' })}<div class="phone-scroll p-4 space-y-3"><div class="text-xs text-slate-600">Welcome, <strong>${esc(arun.name)}</strong> (${esc(arun.id)}). Only your authorized departments are shown:</div>${arun.departments.map((d) => `<button type="button" data-action="enter-dept" data-val="${esc(d)}" class="w-full bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-2xl p-4 flex items-center justify-between text-left"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${d.includes('Sales') ? 'briefcase' : 'factory'}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold text-slate-900">${esc(d)}</div><div class="text-xs text-[#1D4ED8]">${esc(arun.deptRoles[d] || 'Authorized')}</div></div></div><i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}<div class="text-[11px] text-slate-400 text-center pt-2">Unauthorized departments (Supply Chain, Logistics, Employee Admin) are hidden.</div></div>`;
+}
+function renderSwitchDept() {
+  const arun = getEmp('EMP-001');
+  return `${renderTopBar('Switch Department', { back: true, fallback: 'more' })}<div class="phone-scroll p-4 space-y-3 text-xs"><div class="text-slate-600">Switch between your authorized departments without logging out:</div>${arun.departments.map((d) => `<button type="button" data-action="enter-dept" data-val="${esc(d)}" class="w-full bg-white border ${state.currentDept === d ? 'border-[#1E3A8A] bg-blue-50/40' : 'border-slate-200'} rounded-xl p-3.5 flex justify-between items-center"><span class="font-semibold">${esc(d)}</span>${state.currentDept === d ? badgeHTML('Active') : '<span class="text-[#1D4ED8] font-medium">Switch</span>'}</button>`).join('')}</div>`;
+}
+function renderPermissionDenied() {
+  return `${renderTopBar('Access Restricted', { back: true, fallback: 'dashboard' })}<div class="phone-scroll p-5 flex flex-col justify-center"><div class="bg-white border border-rose-200 rounded-2xl p-6 text-center space-y-2.5"><div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto"><i data-lucide="shield-off" class="w-6 h-6"></i></div><div class="text-base font-bold text-slate-900">Access Restricted</div><div class="text-xs text-slate-600">You do not have permission to access this page or perform this action.</div><div class="grid grid-cols-2 gap-2 pt-2"><button type="button" data-action="go-back" class="py-2 rounded-lg border border-slate-200 text-xs font-semibold">Go Back</button><button type="button" data-nav="dashboard" class="py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Dashboard</button></div></div></div>`;
+}
+
+// 37–39. MORE, PROFILE, CHANGE PASSWORD
+function renderMore() {
+  return `${renderTopBar('More')}<div class="phone-scroll p-3.5 space-y-4"><button type="button" data-nav="profile" class="w-full bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 text-left"><div class="w-10 h-10 rounded-full bg-[#1E3A8A] text-white font-bold text-sm flex items-center justify-center">PN</div><div class="flex-1"><div class="text-sm font-semibold">Priya Nair</div><div class="text-xs text-slate-500">EMP-002 • Employee Management</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs font-medium">${[['Login Accounts', 'accounts-list'], ['Activity Logs', 'activity-logs'], ['Switch Department', 'switch-dept'], ['Common Login Preview', 'common-login'], ['Profile', 'profile'], ['Change Password', 'change-password'], ['Common UI States (16)', 'ui-states']].map(([l, s]) => `<button type="button" data-nav="${s}" class="w-full px-3.5 py-2.5 flex justify-between text-slate-800 hover:bg-slate-50"><span>${l}</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></button>`).join('')}<button type="button" data-nav="common-login" class="w-full px-3.5 py-2.5 flex justify-between text-rose-600"><span>Logout</span><i data-lucide="log-out" class="w-4 h-4"></i></button></div></div>${renderBottomNav('more')}`;
+}
+function renderProfile() {
+  const e = getEmp('EMP-001');
+  return `${renderTopBar('Profile', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-center"><div class="w-16 h-16 rounded-full bg-[#1E3A8A] text-white font-bold text-lg flex items-center justify-center mx-auto mb-2">AK</div><div class="text-base font-semibold">${esc(e.name)}</div><div class="text-xs text-[#1D4ED8]">${esc(e.designation)}</div></div><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">${[['Employee ID', e.id], ['Email', e.email], ['Phone', e.phone], ['Departments', e.departments.join(', ')]].map(([k, v]) => `<div class="px-3.5 py-2.5 flex justify-between gap-2"><span class="text-slate-500 shrink-0">${k}</span><strong class="text-right">${esc(v)}</strong></div>`).join('')}</div><button type="button" data-nav="change-password" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">Change Password</button><button type="button" data-nav="common-login" class="w-full py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">Logout</button></div>`;
+}
+function renderChangePassword() {
+  return `${renderTopBar('Change Password', { back: true, fallback: 'profile' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Current Password *</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">New Password *</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Confirm New Password *</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Password updated securely" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Update Password</button>`)}`;
+}
+
+// 40. COMMON UI STATES (ALL 16 REUSABLE STATES)
+function renderUIStates() {
+  const s16 = [
+    ['no-emp', 'No Employees', 'users', 'text-slate-300', 'No employees added', 'Create employee records and assign Cryo ERP departments.', '+ Add Employee', 'add-employee'],
+    ['no-dept', 'No Departments', 'building-2', 'text-slate-300', 'No departments configured', 'Add ERP departments before assigning employee access.', '+ Add Dept', 'add-department'],
+    ['no-roles', 'No Roles', 'award', 'text-slate-300', 'No role templates', 'Create reusable permission roles for quick onboarding.', '+ Create Role', 'create-role'],
+    ['no-login', 'No Login Account', 'user-x', 'text-amber-500', 'Login Account Not Created', 'Karthik R (EMP-003) does not have a login account yet.', 'Create Account', 'create-account'],
+    ['inactive', 'Account Inactive', 'ban', 'text-rose-500', 'Account Deactivated', 'This account is inactive. Active sessions have been revoked.', 'View Account', 'account-details'],
+    ['locked', 'Account Locked', 'lock', 'text-rose-600', 'Account Locked', 'Too many failed sign-in attempts. Unlock or reset password.', 'Reset Password', 'reset-password'],
+    ['no-dept-asgn', 'No Dept Assigned', 'folder-x', 'text-amber-500', 'No Department Assigned', 'Assign at least one department so this employee can log in.', 'Assign Dept', 'assign-departments'],
+    ['no-perms', 'No Permissions', 'shield-alert', 'text-amber-500', 'No Permissions Assigned', 'Select a role or configure screen permissions for this employee.', 'Configure', 'configure-permissions'],
+    ['perm-denied', 'Permission Denied', 'shield-off', 'text-rose-600', 'Access Restricted', 'You do not have permission to view this screen or action.', 'Dashboard', 'dashboard'],
+    ['emp-created', 'Emp Created', 'check-circle-2', 'text-emerald-500', 'Employee Created', 'EMP-001 Arun Kumar added with Sales & Production access.', 'View Employee', 'employee-details'],
+    ['perm-updated', 'Perms Updated', 'shield-check', 'text-emerald-500', 'Permissions Updated', 'Changes applied to Arun Kumar and logged in Activity Logs.', 'View Logs', 'activity-logs'],
+    ['pwd-reset', 'Password Reset', 'key-round', 'text-emerald-500', 'Password Reset Sent', 'A reset link has been emailed. Next login requires password change.', 'Done', 'accounts-list'],
+    ['loading', 'Loading', '', '', '', '', '', ''],
+    ['validation', 'Form Validation', 'alert-circle', 'text-rose-500', 'Duplicate Email Found', 'arun@example.com is already linked to EMP-001.', 'Fix Email', 'add-employee'],
+    ['network', 'Network Error', 'wifi-off', 'text-rose-400', 'Connection Lost', 'Unable to sync permissions. Check internet and retry.', 'Retry', 'dashboard'],
+    ['confirm', 'Confirm Dialog', 'help-circle', 'text-[#1E3A8A]', 'Deactivate Account?', 'Prevents login & revokes sessions while keeping ERP history.', 'Review', 'toggle-account-sheet']
+  ];
+  const cur = s16.find((x) => x[0] === state.uiStateDemo) || s16[10];
+  const body = cur[0] === 'loading'
+    ? `<div class="space-y-2.5">${[1, 2, 3].map(() => `<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="h-3 w-24 skeleton"></div><div class="h-4 w-44 skeleton"></div><div class="h-3 w-full skeleton"></div></div>`).join('')}</div>`
+    : `<div class="bg-white border border-slate-200 rounded-xl p-6 text-center space-y-2"><i data-lucide="${cur[2]}" class="w-10 h-10 ${cur[3]} mx-auto"></i><div class="text-sm font-semibold">${cur[4]}</div><div class="text-xs text-slate-500">${cur[5]}</div><button type="button" data-nav="${cur[7]}" class="mt-2 px-4 py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">${cur[6]}</button></div>`;
+  return `${renderTopBar('Common UI States (16)', { back: true, fallback: 'more' })}<div class="bg-white border-b border-slate-200 px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${s16.map((s) => `<button type="button" data-action="set-ui-state" data-val="${s[0]}" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap border ${cur[0] === s[0] ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${s[1]}</button>`).join('')}</div><div class="phone-scroll p-3.5 flex flex-col justify-center">${body}</div>`;
+}
+
+/* ---------- ACTIVATE / DEACTIVATE BOTTOM SHEET (SECTION 28) ---------- */
+function renderSheet() {
+  const root = document.getElementById('sheetRoot');
+  if (!state.activeSheet) { root.className = 'hidden'; root.innerHTML = ''; return; }
+  const e = getEmp(state.activeSheet.empId || state.selected.empId);
+  const deact = e.accountStatus === 'Active';
+  root.className = 'sheet-backdrop';
+  root.innerHTML = `<div class="sheet-panel"><div class="px-4 py-3 border-b border-slate-200 flex justify-between items-center"><h2 class="text-sm font-semibold">${deact ? 'Deactivate Account' : 'Activate Account'}</h2><button type="button" data-action="close-sheet" class="p-1 text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="p-4 text-xs space-y-3"><div class="bg-slate-50 rounded-xl p-3"><strong>${esc(e.name)}</strong> (${esc(e.email)})<div class="mt-1">${badgeHTML(e.accountStatus)}</div></div>${e.isLastAdmin && deact ? `<div class="bg-rose-50 border border-rose-200 rounded-lg p-2.5 text-rose-700">Protected: Cannot deactivate the last authorized ERP Administrator account.</div>` : deact ? `<div><label class="block font-medium mb-1">Reason (Optional)</label><input id="deactReason" type="text" placeholder="Role change / employee exited" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div class="text-slate-500">Revokes active sessions immediately while preserving historical ERP records.</div>` : `<div class="text-slate-600">Restores login access with previously authorized permissions.</div>`}</div><div class="px-4 py-3 border-t flex gap-2 bg-white"><button type="button" data-action="close-sheet" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Cancel</button><button type="button" data-action="confirm-toggle-acc" data-id="${e.id}" ${e.isLastAdmin && deact ? 'disabled' : ''} class="flex-1 py-2.5 rounded-xl ${e.isLastAdmin && deact ? 'bg-slate-200 text-slate-400' : deact ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'} text-xs font-semibold">${deact ? 'Confirm Deactivation' : 'Confirm Activation'}</button></div></div>`;
+  lucide.createIcons({ nodes: [root] });
+}
+
+/* ---------- ROUTER, SIDEBAR, GALLERY & FLOW ---------- */
+function renderScreenMarkup(id) {
+  const map = {
+    'dashboard': renderDashboard, 'employees-list': renderEmployeesList, 'add-employee': () => renderEmployeeForm(false),
+    'employee-details': renderEmployeeDetails, 'edit-employee': () => renderEmployeeForm(true), 'assign-departments': renderAssignDepartments,
+    'departments-list': renderDepartmentsList, 'add-department': () => renderDeptForm(false), 'department-details': renderDeptDetails, 'edit-department': () => renderDeptForm(true),
+    'roles-list': renderRolesList, 'create-role': () => renderRoleForm(false), 'role-details': renderRoleDetails, 'edit-role': () => renderRoleForm(true), 'assign-role': renderAssignRole,
+    'permissions-hub': renderPermissionsHub, 'emp-permissions-list': renderEmpPermissionsList, 'configure-permissions': renderConfigurePermissions, 'permission-review': renderPermissionReview,
+    'accounts-list': renderAccountsList, 'create-account': renderCreateAccount, 'account-details': renderAccountDetails, 'reset-password': renderResetPassword, 'toggle-account-sheet': renderAccountDetails,
+    'activity-logs': renderActivityLogs, 'activity-details': renderActivityDetails, 'common-login': renderCommonLogin, 'first-login-password': renderFirstLoginPwd,
+    'forgot-password': renderForgotPassword, 'dept-selection': renderDeptSelection, 'switch-dept': renderSwitchDept, 'permission-denied': renderPermissionDenied,
+    'more': renderMore, 'profile': renderProfile, 'change-password': renderChangePassword, 'ui-states': renderUIStates
+  };
+  return (map[id] || renderDashboard)();
+}
+
+function renderSidebar() {
+  document.getElementById('sbModeFlowBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'flow' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sbModeAllBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'all' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sidebarSearchWrap').classList.toggle('hidden', state.sidebarMode !== 'all');
+  const c = document.getElementById('sidebarList');
+
+  if (state.sidebarMode === 'flow') {
+    const steps = [
+      ['★', 'Employee Dashboard', 'Accounts overview, depts & recent activity', 'dashboard'],
+      ['1', 'Create Employee', 'Minimal info + multi-dept + login toggle', 'add-employee'],
+      ['2', 'Assign Departments & Roles', 'Arun Kumar → Sales (Std) + Prod (View)', 'assign-departments'],
+      ['3', 'Configure Permission Matrix', 'Screen (View/Add/Edit/Proc) + Actions', 'configure-permissions'],
+      ['4', 'Manage Login Accounts', 'Create account, Reset Pwd, Deactivate', 'accounts-list'],
+      ['5', 'Common Login & Dept Picker', 'One login → shows only authorized depts', 'common-login'],
+      ['6', 'Audit Activity Logs', 'Read-only permission & account history', 'activity-logs']
+    ];
+    c.innerHTML = `<div class="px-1.5 pt-1 pb-2"><div class="text-xs font-semibold text-slate-900">Simple Access Setup Flow</div><div class="text-[11px] text-slate-500 mt-0.5">Tap any stage to try it live in the phone.</div></div><div class="space-y-1.5 px-1">${steps.map(([n, t, d, sc]) => `<button type="button" data-sidebar-screen="${sc}" class="w-full p-2.5 rounded-xl text-left border transition flex items-start gap-2.5 ${state.screen === sc && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-800 border-slate-200 hover:border-[#1D4ED8]'}"><span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 ${state.screen === sc && state.viewMode === 'phone' ? 'bg-white text-[#1E3A8A]' : 'bg-blue-50 text-[#1E3A8A]'}">${n}</span><div><div class="text-xs font-semibold leading-tight">${t}</div><div class="text-[11px] mt-0.5 ${state.screen === sc && state.viewMode === 'phone' ? 'text-blue-100' : 'text-slate-500'}">${d}</div></div></button>`).join('')}</div><div class="px-1 pt-2 border-t border-slate-200"><button type="button" data-sidebar-screen="ui-states" class="w-full px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 text-left">Common UI States (16)</button></div>`;
+    return;
+  }
+
+  const sv = (document.getElementById('sidebarSearch')?.value || '').trim().toLowerCase();
+  c.innerHTML = SCREEN_CATALOG.map((grp) => {
+    const items = grp.items.filter((i) => !sv || `${i.num} ${i.title} ${grp.group}`.toLowerCase().includes(sv));
+    if (!items.length) return '';
+    return `<div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1">${esc(grp.group)}</div><div class="space-y-0.5">${items.map((it) => `<button type="button" data-sidebar-screen="${it.id}" class="w-full px-2.5 py-1.5 rounded-lg text-left text-xs ${state.screen === it.id && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white font-semibold' : 'text-slate-700 hover:bg-slate-100'}"><span class="opacity-60 mr-1.5">${it.num}.</span>${esc(it.title)}</button>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function renderGallery() {
+  const c = document.getElementById('galleryContainer');
+  const all = SCREEN_CATALOG.flatMap((g) => g.items.map((i) => ({ ...i, group: g.group })));
+  const groups = ['All', ...SCREEN_CATALOG.map((g) => g.group)];
+  const shown = state.galleryCategory === 'All' ? all : all.filter((i) => i.group === state.galleryCategory);
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h2 class="text-base font-bold">All 36 Employee & Permissions Screens</h2><p class="text-xs text-slate-500">Click any screen card to open and interact with it.</p></div><div class="flex gap-1.5 overflow-x-auto no-scrollbar">${groups.map((g) => `<button type="button" data-gallery-cat="${esc(g)}" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border ${state.galleryCategory === g ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${esc(g)}</button>`).join('')}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">${shown.map((it) => `<div data-gallery-open="${it.id}" class="bg-white border border-slate-200 rounded-2xl p-3 cursor-pointer hover:border-[#1D4ED8] hover:shadow-md transition flex flex-col"><div class="text-xs font-semibold mb-2 truncate"><span class="text-[#1D4ED8] mr-1">#${it.num}</span>${esc(it.title)}</div><div class="gallery-mini-phone pointer-events-none select-none"><div class="origin-top-left w-[360px] h-[640px] scale-[0.65] flex flex-col bg-[#F8FAFC]">${renderScreenMarkup(it.id)}</div></div></div>`).join('')}</div>`;
+  lucide.createIcons({ nodes: [c] });
+}
+
+function renderWorkflowMap() {
+  const c = document.getElementById('workflowContainer');
+  const stages = [
+    ['1', 'Create Employee', 'EMP-001 Arun Kumar (arun@example.com) — minimal info, zero HR bloat', 'add-employee'],
+    ['2', 'Assign Departments', 'Assign Sales Management & Production Management', 'assign-departments'],
+    ['3', 'Select Role / Matrix', 'Sales: Standard + Send Quote | Production: View Only', 'configure-permissions'],
+    ['4', 'Create & Activate Login', 'One shared login account with temporary password', 'account-details'],
+    ['5', 'Common Employee Login', 'Single Cryo ERP login (no role selector)', 'common-login'],
+    ['6', 'Authorized Dept Picker', 'Shows ONLY Sales & Production; hides unauthorized depts', 'dept-selection'],
+    ['7', 'Switch Dept Seamlessly', 'Switch between Sales & Production without logging out', 'switch-dept'],
+    ['8', 'Audit & Access Control', 'Read-only Activity Logs & Permission Denied fallback', 'activity-logs']
+  ];
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4"><div><h2 class="text-base font-bold">Cryo ERP – Employee Account & Access Workflow</h2><p class="text-xs text-slate-500">One shared login per employee, department-based & permission-based access control.</p></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">${stages.map(([n, t, d, sc]) => `<button type="button" data-gallery-open="${sc}" class="text-left bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3.5 space-y-1.5"><span class="w-6 h-6 rounded-full bg-[#1E3A8A] text-white text-xs font-bold flex items-center justify-center">${n}</span><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-600">${d}</div></button>`).join('')}</div></div>`;
+}
+
+function renderAll() {
+  ['Phone', 'Gallery', 'Flow'].forEach((m) => {
+    const key = m.toLowerCase() === 'flow' ? 'workflow' : m.toLowerCase();
+    document.getElementById(`mode${m}Btn`).className = `px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${state.viewMode === key ? 'bg-[#1E3A8A] text-white shadow-sm' : 'text-slate-600'}`;
+  });
+  document.getElementById('phoneContainer').classList.toggle('hidden', state.viewMode !== 'phone');
+  document.getElementById('galleryContainer').classList.toggle('hidden', state.viewMode !== 'gallery');
+  document.getElementById('workflowContainer').classList.toggle('hidden', state.viewMode !== 'workflow');
+  renderSidebar();
+  if (state.viewMode === 'phone') {
+    const root = document.getElementById('screenRoot');
+    root.innerHTML = renderScreenMarkup(state.screen);
+    lucide.createIcons({ nodes: [root] });
+    renderSheet();
+    const meta = SCREEN_CATALOG.flatMap((g) => g.items).find((i) => i.id === state.screen);
+    const metaEl = document.getElementById('screenFooterMeta');
+    if (meta && metaEl) metaEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-[#1E3A8A]">Screen #${meta.num}</span><span>${esc(meta.title)}</span><span>•</span><span><strong>Employee & Permissions</strong></span>`;
+  } else if (state.viewMode === 'gallery') renderGallery();
+  else renderWorkflowMap();
+}
+
+/* ---------- EVENTS ---------- */
+document.getElementById('modePhoneBtn').addEventListener('click', () => { state.viewMode = 'phone'; renderAll(); });
+document.getElementById('modeGalleryBtn').addEventListener('click', () => { state.viewMode = 'gallery'; renderAll(); });
+document.getElementById('modeFlowBtn').addEventListener('click', () => { state.viewMode = 'workflow'; renderAll(); });
+document.getElementById('sbModeFlowBtn').addEventListener('click', () => { state.sidebarMode = 'flow'; renderSidebar(); });
+document.getElementById('sbModeAllBtn').addEventListener('click', () => { state.sidebarMode = 'all'; renderSidebar(); });
+document.getElementById('sidebarSearch').addEventListener('input', () => renderSidebar());
+
+const sidebarEl = document.getElementById('screenSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+document.getElementById('toggleSidebarBtn').addEventListener('click', () => { sidebarEl.classList.toggle('-translate-x-full'); sidebarOverlay.classList.toggle('hidden'); });
+sidebarOverlay.addEventListener('click', () => { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); });
+
+document.addEventListener('input', (e) => {
+  const f = e.target.dataset.filter;
+  if (f) { state.filters[f] = e.target.value; const p = e.target.selectionStart; renderAll(); const el = document.querySelector(`[data-filter="${f}"]`); if (el) { el.focus(); el.setSelectionRange(p, p); } }
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.dataset.pmDept) {
+    const emp = getEmp(state.selected.empId);
+    const { pmDept, pmSc, pmK } = e.target.dataset;
+    if (!emp.permissions[pmDept]) emp.permissions[pmDept] = {};
+    if (!emp.permissions[pmDept][pmSc]) emp.permissions[pmDept][pmSc] = { view: false, create: false, edit: false, process: false };
+    emp.permissions[pmDept][pmSc][pmK] = e.target.checked;
+    if (e.target.checked) emp.permissions[pmDept][pmSc].view = true;
+    emp.accessType = 'Custom Permissions';
+  }
+});
+
+document.addEventListener('click', (e) => {
+  const sb = e.target.closest('[data-sidebar-screen]');
+  if (sb) { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); navigate(sb.dataset.sidebarScreen); return; }
+  const gc = e.target.closest('[data-gallery-cat]');
+  if (gc) { state.galleryCategory = gc.dataset.galleryCat; renderGallery(); return; }
+  const go = e.target.closest('[data-gallery-open]');
+  if (go) { navigate(go.dataset.galleryOpen); return; }
+  const nav = e.target.closest('[data-nav]');
+  if (nav) { navigate(nav.dataset.nav); return; }
+  const opn = e.target.closest('[data-open]');
+  if (opn) { navigate(opn.dataset.open, { key: opn.dataset.key, val: opn.dataset.val }); return; }
+  const ft = e.target.closest('[data-filter-tab]');
+  if (ft) { state.filters[ft.dataset.filterTab] = ft.dataset.val; renderAll(); return; }
+
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const act = btn.dataset.action;
+
+  if (act === 'go-back') goBack(btn.dataset.fallback || 'dashboard');
+  else if (act === 'close-sheet') { state.activeSheet = null; renderSheet(); }
+  else if (act === 'open-sheet') { state.activeSheet = { type: btn.dataset.sheet, empId: state.selected.empId }; renderSheet(); }
+  else if (act === 'toast') showToast(btn.dataset.msg);
+  else if (act === 'toggle-pwd-vis') { state.showLoginPwd = !state.showLoginPwd; renderAll(); }
+  else if (act === 'gen-pwd') { state.tempGeneratedPwd = 'Cryo@' + Math.floor(1000 + Math.random() * 9000) + '#K'; renderAll(); showToast('Generated temporary password'); }
+  else if (act === 'set-emp-tab') { state.selected.empDetailTab = btn.dataset.val; renderAll(); }
+  else if (act === 'set-perm-dept') { state.selected.permDeptTab = btn.dataset.val; renderAll(); }
+  else if (act === 'save-emp') {
+    const name = (document.getElementById('eName')?.value || '').trim();
+    const email = (document.getElementById('eEmail')?.value || '').trim();
+    if (!name || !email) { showToast('Name & email are required', 'error'); return; }
+    if (btn.dataset.mode === 'edit') {
+      const emp = getEmp(state.selected.empId);
+      Object.assign(emp, { name, email, phone: document.getElementById('ePhone')?.value || '', designation: document.getElementById('eDesig')?.value || '' });
+      addAuditLog('Employee updated', `Updated profile details`, `${emp.name} (${emp.id})`, 'Previous profile', `${name} • ${email}`);
+      navigate('employee-details'); showToast('Employee updated');
+    } else {
+      if (state.employees.some((x) => x.email.toLowerCase() === email.toLowerCase())) { showToast('Duplicate login email is not allowed', 'error'); return; }
+      const depts = Array.from(document.querySelectorAll('input[name="eDepts"]:checked')).map((el) => el.value);
+      const loginOn = document.getElementById('eEnableLogin')?.checked;
+      const newId = `EMP-00${state.employees.length + 1}`;
+      state.employees.unshift({
+        id: newId, name, email, phone: document.getElementById('ePhone')?.value || '', designation: document.getElementById('eDesig')?.value || 'Executive',
+        accountStatus: loginOn ? 'Active' : 'Login Not Created', isLastAdmin: false, accountCreated: loginOn ? '2026-11-20' : '', lastLogin: 'Never',
+        pwdResetRequired: !!loginOn, accessType: 'Role Based', departments: depts.length ? depts : ['Sales Management'], deptRoles: {}, permissions: {}, workflowActions: {}
+      });
+      addAuditLog('Employee created', `Created employee (${loginOn ? 'Login Active' : 'No Login'})`, `${name} (${newId})`, '—', depts.join(', '));
+      navigate('employee-details', { key: 'empId', val: newId }); showToast(`${newId} created`);
+    }
+  } else if (act === 'save-assign-depts') {
+    const emp = getEmp(btn.dataset.id);
+    const prev = emp.departments.join(', ');
+    emp.departments = Array.from(document.querySelectorAll('input[name="assignDept"]:checked')).map((el) => el.value);
+    addAuditLog('Department assigned', 'Updated department eligibility', `${emp.name} (${emp.id})`, prev, emp.departments.join(', ') || 'None');
+    navigate('employee-details'); showToast('Department access saved');
+  } else if (act === 'save-dept') {
+    const name = (document.getElementById('dName')?.value || '').trim();
+    if (!name) { showToast('Department name required', 'error'); return; }
+    if (btn.dataset.mode === 'edit') {
+      Object.assign(getDept(state.selected.deptId), { name, module: document.getElementById('dMod')?.value, desc: document.getElementById('dDesc')?.value, status: document.getElementById('dStat')?.value });
+      navigate('department-details'); showToast('Department updated');
+    } else {
+      state.departments.push({ id: `DEPT-0${state.departments.length + 1}`, code: name.slice(0, 4).toUpperCase(), name, module: document.getElementById('dMod')?.value, desc: document.getElementById('dDesc')?.value || '', status: 'Active' });
+      navigate('departments-list'); showToast(`${name} added`);
+    }
+  } else if (act === 'save-role') {
+    const name = (document.getElementById('rName')?.value || '').trim();
+    if (!name) { showToast('Role name required', 'error'); return; }
+    if (btn.dataset.mode === 'edit') {
+      const r = getRole(state.selected.roleId); r.name = name; r.desc = document.getElementById('rDesc')?.value || r.desc;
+      addAuditLog('Role updated', `Updated role template ${name}`, r.id, 'Previous template', name);
+      navigate('role-details'); showToast('Role updated');
+    } else {
+      state.roles.push({ id: `ROLE-0${state.roles.length + 1}`, name, depts: ['Sales Management'], summary: 'Configured screen & action permissions', status: 'Active', desc: document.getElementById('rDesc')?.value || '' });
+      navigate('roles-list'); showToast(`${name} saved`);
+    }
+  } else if (act === 'save-assign-role') {
+    const emp = getEmp(btn.dataset.id);
+    document.querySelectorAll('[data-dept-role]').forEach((el) => { emp.deptRoles[el.dataset.deptRole] = el.value; });
+    addAuditLog('Permissions updated', 'Updated department role assignments', `${emp.name} (${emp.id})`, 'Previous roles', JSON.stringify(emp.deptRoles));
+    navigate('employee-details'); showToast('Roles assigned');
+  } else if (act === 'perm-preset') {
+    const emp = getEmp(state.selected.empId);
+    const dept = btn.dataset.dept;
+    if (!emp.permissions[dept]) emp.permissions[dept] = {};
+    (DEPT_SCREENS[dept] || []).forEach((sc) => {
+      emp.permissions[dept][sc] = btn.dataset.val === 'all' ? { view: true, create: true, edit: true, process: true } : btn.dataset.val === 'view' ? { view: true, create: false, edit: false, process: false } : { view: false, create: false, edit: false, process: false };
+    });
+    renderAll(); showToast(`Applied ${btn.dataset.val} preset`);
+  } else if (act === 'confirm-perms') {
+    const emp = getEmp(btn.dataset.id);
+    addAuditLog('Permissions updated', 'Saved screen & workflow permissions', `${emp.name} (${emp.id})`, 'Previous matrix', 'Updated permissions applied');
+    navigate('employee-details'); showToast('Permissions saved & logged');
+  } else if (act === 'save-create-acc') {
+    const emp = getEmp(document.getElementById('caEmp')?.value);
+    emp.accountStatus = 'Active'; emp.accountCreated = '2026-11-20'; emp.pwdResetRequired = true;
+    addAuditLog('Login account created', 'Enabled shared Cryo ERP login', `${emp.name} (${emp.id})`, 'Login Not Created', 'Active (Temp Pwd)');
+    navigate('account-details', { key: 'empId', val: emp.id }); showToast(`Login account created for ${emp.name}`);
+  } else if (act === 'confirm-reset-pwd') {
+    const emp = getEmp(btn.dataset.id);
+    addAuditLog('Password reset', 'Initiated secure password reset', `${emp.name} (${emp.id})`, '—', 'Reset required on next login');
+    navigate('account-details'); showToast('Password reset confirmed');
+  } else if (act === 'confirm-toggle-acc') {
+    const emp = getEmp(btn.dataset.id);
+    const next = emp.accountStatus === 'Active' ? 'Inactive' : 'Active';
+    emp.accountStatus = next;
+    addAuditLog(next === 'Active' ? 'Account activated' : 'Account deactivated', next === 'Active' ? 'Restored account access' : 'Revoked active sessions & preserved history', `${emp.name} (${emp.id})`, next === 'Active' ? 'Inactive' : 'Active', next);
+    state.activeSheet = null; navigate('account-details'); showToast(`Account ${next}`);
+  } else if (act === 'enter-dept') {
+    state.currentDept = btn.dataset.val;
+    navigate('dashboard'); showToast(`Opened ${btn.dataset.val}`);
+  } else if (act === 'set-ui-state') { state.uiStateDemo = btn.dataset.val; renderAll(); }
+});
+
+renderAll();
+</script>
+</body>
+</html>

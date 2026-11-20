@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cryo ERP – Supply Chain Management Mobile App</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --navy:#1E3A8A; --royal:#1D4ED8; --bg:#F8FAFC; --card:#FFFFFF; --border:#E2E8F0; --text:#0F172A; }
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; background: #EEF2F6; color: var(--text); overflow-x: hidden; }
+    .phone-shell {
+      width: 390px; max-width: 100%; height: 820px; max-height: calc(100vh - 76px);
+      background: var(--bg); border-radius: 36px; border: 8px solid #0F172A;
+      box-shadow: 0 24px 60px -15px rgba(15, 23, 42, 0.28);
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    @media (max-width: 520px) {
+      .phone-shell { width: 100%; height: calc(100vh - 56px); max-height: none; border-radius: 0; border: none; box-shadow: none; }
+    }
+    .phone-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .phone-scroll::-webkit-scrollbar { width: 4px; }
+    .phone-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sheet-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: flex-end; z-index: 40; animation: fadeIn 0.16s ease-out; }
+    .sheet-panel { width: 100%; max-height: 88%; background: #FFF; border-top-left-radius: 20px; border-top-right-radius: 20px; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(24px); opacity: 0.9; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulseBg { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    .skeleton { animation: pulseBg 1.4s ease-in-out infinite; background: #E2E8F0; border-radius: 6px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .toast-bar { position: absolute; top: 46px; left: 14px; right: 14px; z-index: 60; animation: fadeIn 0.16s ease-out; }
+    .gallery-mini-phone { width: 100%; aspect-ratio: 9 / 16; max-height: 360px; background: #F8FAFC; border: 3px solid #1E293B; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .gallery-mini-phone:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(30, 58, 138, 0.2); border-color: #1D4ED8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Toolbar -->
+  <header class="bg-white border-b border-slate-200 px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button id="toggleSidebarBtn" type="button" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Toggle menu">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm shrink-0">C</div>
+      <div class="min-w-0">
+        <div class="font-semibold text-sm text-slate-900 truncate">Cryo ERP – Supply Chain Management</div>
+        <div class="text-[11px] text-slate-500 truncate hidden sm:block">Simple Store & Purchase Flow • 43 Mobile Screens</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <select id="roleSelect" aria-label="Employee Role" class="px-2 py-1 text-xs font-medium bg-slate-100 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-[#1D4ED8]">
+        <option value="manager">SC Manager</option>
+        <option value="purchase">Purchase Exec</option>
+        <option value="storekeeper">Storekeeper</option>
+      </select>
+
+      <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+        <button id="modePhoneBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">App</span>
+        </button>
+        <button id="modeGalleryBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">All 43</span>
+        </button>
+        <button id="modeFlowBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1">
+          <i data-lucide="git-branch" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Flow</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 flex relative overflow-hidden">
+    <!-- Left Guided Flow / All 43 Screens Sidebar -->
+    <aside id="screenSidebar" class="fixed lg:static inset-y-14 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="p-3 border-b border-slate-200 space-y-2.5">
+        <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+          <button id="sbModeFlowBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">Simple Flow</button>
+          <button id="sbModeAllBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">All 43 Screens</button>
+        </div>
+        <div id="sidebarSearchWrap" class="relative hidden">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5"></i>
+          <input id="sidebarSearch" type="text" placeholder="Find any of 43 screens..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D4ED8]" />
+        </div>
+      </div>
+      <div id="sidebarList" class="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-3"></div>
+    </aside>
+    <div id="sidebarOverlay" class="fixed inset-0 top-14 bg-slate-900/30 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Canvas -->
+    <main class="flex-1 overflow-y-auto flex items-start justify-center p-0 sm:p-4 lg:p-5">
+      <div id="phoneContainer" class="flex flex-col items-center w-full">
+        <div class="phone-shell">
+          <div class="h-7 px-5 bg-white flex items-center justify-between text-[11px] font-semibold text-slate-800 shrink-0 select-none border-b border-slate-100">
+            <span>12:54</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full hidden sm:block"></div>
+            <div class="flex items-center gap-1.5 text-slate-700">
+              <i data-lucide="signal" class="w-3 h-3"></i>
+              <i data-lucide="wifi" class="w-3 h-3"></i>
+              <i data-lucide="battery-full" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="phoneToast" class="toast-bar hidden"></div>
+          <div id="screenRoot" class="flex-1 flex flex-col min-h-0 relative"></div>
+          <div id="sheetRoot" class="hidden"></div>
+        </div>
+        <div id="screenFooterMeta" class="hidden sm:flex items-center gap-2 mt-2.5 text-xs text-slate-500"></div>
+      </div>
+
+      <div id="galleryContainer" class="hidden w-full max-w-7xl mx-auto pb-8"></div>
+      <div id="workflowContainer" class="hidden w-full max-w-5xl mx-auto pb-8"></div>
+    </main>
+  </div>
+
+<script>
+/* ==========================================================================
+   CRYO ERP – SUPPLY CHAIN MANAGEMENT MOBILE APP
+   Complete 43-Screen Interactive Prototype (Sections 5–47)
+   ========================================================================== */
+
+const SCREEN_CATALOG = [
+  { group: 'Core & Navigation Hubs', items: [
+    { id: 'dashboard', num: 5, title: 'Supply Chain Dashboard' },
+    { id: 'requests-hub', num: 41, title: 'Requests Hub' },
+    { id: 'inventory-hub', num: 42, title: 'Inventory Hub' },
+    { id: 'purchase-hub', num: 43, title: 'Purchase Hub' },
+    { id: 'more', num: 44, title: 'More Menu' },
+    { id: 'notifications', num: 45, title: 'Notifications' },
+    { id: 'profile', num: 46, title: 'Profile' }
+  ]},
+  { group: 'Production Requests & Stock Check', items: [
+    { id: 'mr-list', num: 6, title: 'Material Requests List' },
+    { id: 'mr-details', num: 7, title: 'Material Request Details' },
+    { id: 'stock-check', num: 8, title: 'Stock Availability Check' },
+    { id: 'pending-shortage', num: 40, title: 'Pending Material Shortages' }
+  ]},
+  { group: 'Materials Master & Inventory', items: [
+    { id: 'materials-list', num: 9, title: 'Materials Master List' },
+    { id: 'add-material', num: 10, title: 'Add Material' },
+    { id: 'material-details', num: 11, title: 'Material Details' },
+    { id: 'edit-material', num: 12, title: 'Edit Material' },
+    { id: 'material-approval', num: 13, title: 'New Material Approval' },
+    { id: 'inventory', num: 14, title: 'Inventory List' },
+    { id: 'inventory-details', num: 15, title: 'Inventory Details' },
+    { id: 'stock-history', num: 16, title: 'Stock History' },
+    { id: 'stock-adjustment', num: 17, title: 'Stock Adjustment' }
+  ]},
+  { group: 'Suppliers & Purchasing', items: [
+    { id: 'suppliers-list', num: 18, title: 'Suppliers List' },
+    { id: 'add-supplier', num: 19, title: 'Add Supplier' },
+    { id: 'supplier-details', num: 20, title: 'Supplier Details' },
+    { id: 'edit-supplier', num: 21, title: 'Edit Supplier' },
+    { id: 'pr-list', num: 22, title: 'Purchase Requirements' },
+    { id: 'create-pr', num: 23, title: 'Create Purchase Req' },
+    { id: 'pr-details', num: 24, title: 'Purchase Req Details' },
+    { id: 'po-list', num: 25, title: 'Purchase Orders List' },
+    { id: 'create-po', num: 26, title: 'Create Purchase Order' },
+    { id: 'po-preview', num: 27, title: 'PO Preview' },
+    { id: 'send-po-sheet', num: 28, title: 'Send PO (Sheet)' },
+    { id: 'po-details', num: 29, title: 'PO Details' },
+    { id: 'edit-po', num: 30, title: 'Edit Purchase Order' }
+  ]},
+  { group: 'GRN, Material Issues & Returns', items: [
+    { id: 'grn-list', num: 31, title: 'GRN List' },
+    { id: 'create-grn', num: 32, title: 'Create GRN' },
+    { id: 'confirm-grn', num: 33, title: 'GRN Confirmation' },
+    { id: 'grn-details', num: 34, title: 'GRN Details' },
+    { id: 'mi-list', num: 35, title: 'Material Issues List' },
+    { id: 'create-mi', num: 36, title: 'Create Material Issue' },
+    { id: 'confirm-mi', num: 37, title: 'Confirm Material Issue' },
+    { id: 'mi-details', num: 38, title: 'Material Issue Details' },
+    { id: 'material-return', num: 39, title: 'Material Return' }
+  ]},
+  { group: 'Common UI States', items: [
+    { id: 'ui-states', num: 47, title: 'Common UI States (17)' }
+  ]}
+];
+
+const ROLES = {
+  manager: {
+    name: 'Vigneshwaran R', empId: 'EMP-SC-101', department: 'Supply Chain Department',
+    role: 'Supply Chain Manager', email: 'vignesh@cryoerp.com', phone: '+91 98401 77110',
+    canAdjustStock: true, canApproveNewMat: true, canCreatePO: true, canIssueStock: true
+  },
+  purchase: {
+    name: 'Anitha Krishnan', empId: 'EMP-SC-204', department: 'Supply Chain Department',
+    role: 'Purchase Executive', email: 'anitha.k@cryoerp.com', phone: '+91 98401 88220',
+    canAdjustStock: false, canApproveNewMat: false, canCreatePO: true, canIssueStock: false
+  },
+  storekeeper: {
+    name: 'Murugan S', empId: 'EMP-SC-308', department: 'Supply Chain Department',
+    role: 'Storekeeper', email: 'murugan.s@cryoerp.com', phone: '+91 98401 99330',
+    canAdjustStock: false, canApproveNewMat: false, canCreatePO: false, canIssueStock: true
+  }
+};
+
+/* ---------- SHARED REACTIVE STATE (Exact Sample Data Continuity — Section 49) ---------- */
+const state = {
+  viewMode: 'phone',
+  sidebarMode: 'flow',
+  role: 'manager',
+  screen: 'dashboard',
+  history: [],
+  activeSheet: null,
+  galleryCategory: 'All',
+  uiStateDemo: 'partial-stock',
+
+  selected: {
+    mrId: 'MR-001',
+    matId: 'MAT-02',
+    supId: 'SUP-01',
+    prId: 'PR-001',
+    poId: 'PO-001',
+    grnId: 'GRN-001',
+    miId: 'MI-001'
+  },
+
+  filters: {
+    mrTab: 'All', mrSearch: '',
+    matSearch: '', invTab: 'All', invSearch: '',
+    histType: 'All', histSearch: '',
+    supSearch: '', supDetailTab: 'Materials',
+    prTab: 'All', poTab: 'All', poSearch: '',
+    grnTab: 'All', miTab: 'All'
+  },
+
+  poDraft: null,
+  grnDraft: null,
+  miDraft: null,
+
+  // Shared Material Master & Live Inventory (Section 49 initial stock)
+  materials: [
+    { id: 'MAT-01', code: 'RM-101', name: 'Compressor', unit: 'Pieces', category: 'Cooling', spec: 'Cascade -80°C hermetic compressor', physical: 2, reserved: 0, minStock: 2, supplierId: 'SUP-01', active: true },
+    { id: 'MAT-02', code: 'RM-102', name: 'Steel Sheet', unit: 'Sheets', category: 'Fabrication', spec: 'SS-304 1.2mm lab-grade sheet', physical: 5, reserved: 0, minStock: 6, supplierId: 'SUP-01', active: true },
+    { id: 'MAT-03', code: 'RM-103', name: 'Temperature Controller', unit: 'Pieces', category: 'Electronics', spec: 'Digital PID controller with alarm', physical: 0, reserved: 0, minStock: 4, supplierId: 'SUP-01', active: true },
+    { id: 'MAT-04', code: 'RM-104', name: 'Heating Element', unit: 'Pieces', category: 'Heating', spec: 'Tubular SS immersion heater 1.5kW', physical: 12, reserved: 0, minStock: 5, supplierId: 'SUP-02', active: true }
+  ],
+
+  // Pending New Material Approvals from Production
+  pendingMaterialApprovals: [
+    { id: 'NMA-01', name: 'Silicone Door Gasket (-80°C)', unit: 'Metres', spec: 'Cryo-grade hollow silicone seal', requestedBy: 'Deepak Raj', proId: 'PRO-001', status: 'Pending' }
+  ],
+
+  // Suppliers Master
+  suppliers: [
+    { id: 'SUP-01', name: 'ABC Industrial Supplies', contact: 'Raghavan Iyer', phone: '+91 98405 11223', email: 'sales@abcindustrial.in', address: 'Ambattur Industrial Estate, Chennai', gstin: '33AAACA1122B1Z9', materials: ['Compressor', 'Steel Sheet', 'Temperature Controller'] },
+    { id: 'SUP-02', name: 'Precision Thermal Components', contact: 'Sujatha Menon', phone: '+91 98204 33445', email: 'orders@precisionthermal.in', address: 'Peenya Industrial Area, Bengaluru', gstin: '29AABCP4411K1Z3', materials: ['Heating Element', 'Temperature Controller'] }
+  ],
+
+  // Production Material Requests
+  materialRequests: [
+    {
+      id: 'MR-001', proId: 'PRO-001', soId: 'SO-001', bomId: 'BOM-001',
+      product: 'Deep Freezer', prodQty: 2, requestDate: '2026-11-16', requiredDate: '2026-11-22',
+      requestedBy: 'Karthik Subramanian', status: 'Partially Issued',
+      items: [
+        { matId: 'MAT-01', name: 'Compressor', unit: 'Pieces', requested: 2, issued: 0 },
+        { matId: 'MAT-02', name: 'Steel Sheet', unit: 'Sheets', requested: 8, issued: 0 },
+        { matId: 'MAT-03', name: 'Temperature Controller', unit: 'Pieces', requested: 2, issued: 0 }
+      ]
+    },
+    {
+      id: 'MR-002', proId: 'PRO-002', soId: 'SO-003', bomId: 'BOM-002',
+      product: 'Digital Water Bath', prodQty: 4, requestDate: '2026-11-12', requiredDate: '2026-11-15',
+      requestedBy: 'Deepak Raj', status: 'Completed',
+      items: [
+        { matId: 'MAT-04', name: 'Heating Element', unit: 'Pieces', requested: 4, issued: 4 }
+      ]
+    }
+  ],
+
+  // Purchase Requirements
+  purchaseReqs: [
+    {
+      id: 'PR-001', mrId: 'MR-001', proId: 'PRO-001', requiredDate: '2026-11-21', status: 'PO Created',
+      notes: 'Shortage for PRO-001 Deep Freezer (2 units).',
+      items: [
+        { matId: 'MAT-02', name: 'Steel Sheet', unit: 'Sheets', required: 3, ordered: 3, received: 0 },
+        { matId: 'MAT-03', name: 'Temperature Controller', unit: 'Pieces', required: 2, ordered: 2, received: 0 }
+      ]
+    }
+  ],
+
+  // Supplier Purchase Orders
+  purchaseOrders: [
+    {
+      id: 'PO-001', prId: 'PR-001', mrId: 'MR-001', supplierId: 'SUP-01',
+      date: '2026-11-17', expectedDelivery: '2026-11-20', status: 'Confirmed',
+      discount: 0, taxPct: 18, paymentTerms: '30 days credit', notes: 'Deliver to Cryo Store Gate 2.',
+      items: [
+        { matId: 'MAT-02', name: 'Steel Sheet', unit: 'Sheets', qty: 3, received: 0, unitPrice: 3200 },
+        { matId: 'MAT-03', name: 'Temperature Controller', unit: 'Pieces', qty: 2, received: 0, unitPrice: 4800 }
+      ]
+    }
+  ],
+
+  // Goods Receipt Notes (GRN)
+  grns: [
+    {
+      id: 'GRN-001', poId: 'PO-001', mrId: 'MR-001', supplierId: 'SUP-01',
+      date: '2026-11-20', receivedBy: 'Murugan S', invoiceRef: 'INV-ABC-7821',
+      status: 'Draft', confirmed: false, remarks: '',
+      items: [
+        { matId: 'MAT-02', name: 'Steel Sheet', unit: 'Sheets', ordered: 3, received: 3, accepted: 3, rejected: 0 },
+        { matId: 'MAT-03', name: 'Temperature Controller', unit: 'Pieces', ordered: 2, received: 2, accepted: 2, rejected: 0 }
+      ]
+    }
+  ],
+
+  // Material Issues to Production
+  materialIssues: [
+    {
+      id: 'MI-001', mrId: 'MR-001', proId: 'PRO-001', product: 'Deep Freezer',
+      date: '2026-11-18', issuedBy: 'Murugan S', issueType: 'Partial Issue',
+      receiptStatus: 'Awaiting Receipt', remarks: 'Issued available Compressor (2) & Steel Sheet (5).',
+      items: [
+        { matId: 'MAT-01', name: 'Compressor', unit: 'Pieces', issued: 2, received: 2 },
+        { matId: 'MAT-02', name: 'Steel Sheet', unit: 'Sheets', issued: 5, received: 5 }
+      ]
+    }
+  ],
+
+  // Stock Inward / Outward History
+  stockHistory: [
+    { id: 'TX-104', matId: 'MAT-01', name: 'Compressor', ref: 'OPEN-2026', date: '2026-11-01', qty: 2, balance: 2, type: 'Opening Stock', dir: 'in' },
+    { id: 'TX-103', matId: 'MAT-02', name: 'Steel Sheet', ref: 'OPEN-2026', date: '2026-11-01', qty: 5, balance: 5, type: 'Opening Stock', dir: 'in' },
+    { id: 'TX-102', matId: 'MAT-04', name: 'Heating Element', ref: 'MI-000', date: '2026-11-13', qty: 4, balance: 12, type: 'Material Issue', dir: 'out' }
+  ],
+
+  // Supply Chain Notifications (All 9 types per Section 45)
+  notifications: [
+    { id: 'N-1', type: 'New Material Request from Production', title: 'MR-001 Received for PRO-001', desc: 'Deep Freezer (2 units) — Compressor, Steel Sheet, Controller', time: '20 mins ago', unread: true, screen: 'mr-details', key: 'mrId', val: 'MR-001' },
+    { id: 'N-2', type: 'Out-of-Stock Alert', title: 'Out of Stock: Temperature Controller', desc: 'Available: 0 Pieces (Min Stock: 4). Required for PRO-001.', time: '1 hr ago', unread: true, screen: 'inventory-details', key: 'matId', val: 'MAT-03' },
+    { id: 'N-3', type: 'Low Stock Alert', title: 'Low Stock: Steel Sheet', desc: 'Available: 5 Sheets (Min Stock: 6). Shortage of 3 for MR-001.', time: '1 hr ago', unread: true, screen: 'inventory-details', key: 'matId', val: 'MAT-02' },
+    { id: 'N-4', type: 'Purchase Order Delivery Due', title: 'PO-001 Delivery Due Today', desc: 'ABC Industrial Supplies — Steel Sheet (3), Controller (2)', time: '2 hrs ago', unread: true, screen: 'po-details', key: 'poId', val: 'PO-001' },
+    { id: 'N-5', type: 'Materials Received', title: 'GRN-001 Ready for Confirmation', desc: 'Confirm accepted stock to update inventory for PRO-001', time: '2 hrs ago', unread: false, screen: 'confirm-grn', key: 'grnId', val: 'GRN-001' },
+    { id: 'N-6', type: 'GRN Completed', title: 'Previous GRN Synced', desc: 'Inventory refreshed automatically after supplier receipt', time: 'Yesterday', unread: false, screen: 'grn-list', key: null, val: null },
+    { id: 'N-7', type: 'Materials Ready to Issue', title: 'Ready to Issue for MR-001', desc: 'Issue remaining materials to Production once GRN confirmed', time: 'Today', unread: false, screen: 'create-mi', key: 'mrId', val: 'MR-001' },
+    { id: 'N-8', type: 'Production Receipt Confirmed', title: 'Production Confirmed MI-001', desc: 'Deepak Raj confirmed receipt of Compressor (2) & Steel Sheet (5)', time: 'Nov 18', unread: false, screen: 'mi-details', key: 'miId', val: 'MI-001' },
+    { id: 'N-9', type: 'Material Receipt Discrepancy', title: 'New Material Request Pending', desc: 'Production requested Silicone Door Gasket (-80°C)', time: 'Nov 19', unread: false, screen: 'material-approval', key: null, val: null }
+  ]
+};
+
+/* ---------- HELPERS ---------- */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const fmtINR = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const todayStr = () => '2026-11-20';
+const currentUser = () => ROLES[state.role];
+
+const getMat = (id) => state.materials.find((m) => m.id === id) || state.materials[0];
+const getSup = (id) => state.suppliers.find((s) => s.id === id) || state.suppliers[0];
+const getMR = (id) => state.materialRequests.find((m) => m.id === id) || state.materialRequests[0];
+const getPR = (id) => state.purchaseReqs.find((p) => p.id === id) || state.purchaseReqs[0];
+const getPO = (id) => state.purchaseOrders.find((p) => p.id === id) || state.purchaseOrders[0];
+const getGRN = (id) => state.grns.find((g) => g.id === id) || state.grns[0];
+const getMI = (id) => state.materialIssues.find((m) => m.id === id) || state.materialIssues[0];
+
+const availStock = (m) => Math.max(0, (m.physical || 0) - (m.reserved || 0));
+function stockStatus(m) {
+  const av = availStock(m);
+  if (av <= 0) return 'Out of Stock';
+  if (av < m.minStock) return 'Low Stock';
+  return 'In Stock';
+}
+
+function calcStockCheck(mr) {
+  let anyIssuable = false, anyShortage = false;
+  const rows = mr.items.map((it) => {
+    const mat = getMat(it.matId);
+    const av = availStock(mat);
+    const remaining = Math.max(0, it.requested - it.issued);
+    const issuable = Math.min(av, remaining);
+    const shortage = Math.max(0, remaining - issuable);
+    if (issuable > 0) anyIssuable = true;
+    if (shortage > 0) anyShortage = true;
+    return { ...it, available: av, remaining, issuable, shortage };
+  });
+  let verdict = 'Full Stock Available';
+  if (!anyIssuable && anyShortage) verdict = 'No Stock Available';
+  else if (anyIssuable && anyShortage) verdict = 'Partial Stock Available';
+  return { rows, verdict, anyIssuable, anyShortage };
+}
+
+function calcPOTotals(items, discount = 0, taxPct = 18) {
+  const subtotal = (items || []).reduce((a, i) => a + (Number(i.qty) || 0) * (Number(i.unitPrice) || 0), 0);
+  const disc = Math.min(Number(discount) || 0, subtotal);
+  const taxable = Math.max(0, subtotal - disc);
+  const tax = Math.round(taxable * (Number(taxPct) || 0) / 100);
+  return { subtotal, discount: disc, tax, grandTotal: taxable + tax };
+}
+
+function badgeHTML(status) {
+  const map = {
+    'Pending': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Partially Issued': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Purchase Required': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Fully Issued': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Completed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'In Stock': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Low Stock': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Out of Stock': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Full Stock Available': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Partial Stock Available': 'bg-amber-50 text-amber-700 border-amber-200',
+    'No Stock Available': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Draft': 'bg-slate-100 text-slate-600 border-slate-200',
+    'Sent': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Confirmed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'PO Created': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Partially Received': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Fully Received': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Full Receipt': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Partial Receipt': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Awaiting Receipt': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Received': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Active': 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  };
+  return `<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full border ${map[status] || 'bg-slate-100 text-slate-700 border-slate-200'} whitespace-nowrap">${esc(status)}</span>`;
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('phoneToast');
+  if (!el) return;
+  const cls = type === 'error' ? 'bg-rose-600 text-white' : type === 'warning' ? 'bg-amber-600 text-white' : 'bg-[#1E3A8A] text-white';
+  el.className = `toast-bar rounded-xl px-3.5 py-2.5 text-xs font-medium shadow-lg flex items-center gap-2 ${cls}`;
+  el.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 shrink-0"></i><span class="flex-1">${esc(msg)}</span>`;
+  el.classList.remove('hidden');
+  lucide.createIcons({ nodes: [el] });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+function navigate(screenId, opts = {}) {
+  if (opts.key && opts.val) state.selected[opts.key] = opts.val;
+  if (!opts.skipHistory && state.screen !== screenId) {
+    state.history.push(state.screen);
+    if (state.history.length > 25) state.history.shift();
+  }
+  state.activeSheet = null;
+  state.screen = screenId;
+
+  if (screenId === 'create-po' || screenId === 'edit-po') {
+    const po = getPO(state.selected.poId);
+    const pr = getPR(state.selected.prId);
+    state.poDraft = screenId === 'edit-po'
+      ? { mode: 'edit', id: po.id, supplierId: po.supplierId, delivery: po.expectedDelivery, terms: po.paymentTerms, discount: po.discount, taxPct: po.taxPct, notes: po.notes, items: po.items.map((i) => ({ ...i })) }
+      : { mode: 'create', prId: pr.id, mrId: pr.mrId, supplierId: 'SUP-01', delivery: '2026-11-22', terms: '30 days credit', discount: 0, taxPct: 18, notes: '', items: pr.items.map((i) => ({ matId: i.matId, name: i.name, unit: i.unit, qty: Math.max(1, i.required - i.received), unitPrice: i.matId === 'MAT-02' ? 3200 : 4800 })) };
+  } else if (screenId === 'send-po-sheet') {
+    state.activeSheet = { type: 'send-po', poId: state.selected.poId };
+  }
+
+  state.viewMode = 'phone';
+  renderAll();
+}
+
+function goBack(fallback = 'dashboard') {
+  state.activeSheet = null;
+  state.screen = state.history.length ? state.history.pop() : fallback;
+  renderAll();
+}
+
+/* ---------- SHARED CHROME ---------- */
+function renderTopBar(title, opts = {}) {
+  const back = opts.back ? `<button type="button" data-action="go-back" data-fallback="${opts.fallback || 'dashboard'}" class="p-1.5 -ml-1.5 rounded-lg text-slate-700 hover:bg-slate-100"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '';
+  return `<div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 shrink-0"><div class="flex items-center gap-2 min-w-0">${back}<h1 class="text-[15px] font-semibold text-slate-900 truncate">${esc(title)}</h1></div><div class="flex items-center gap-1.5 shrink-0">${opts.right || ''}</div></div>`;
+}
+
+function renderBottomNav(active) {
+  const tabs = [
+    ['home', 'Home', 'home', 'dashboard'],
+    ['requests', 'Requests', 'clipboard-list', 'requests-hub'],
+    ['inventory', 'Inventory', 'boxes', 'inventory-hub'],
+    ['purchase', 'Purchase', 'shopping-cart', 'purchase-hub'],
+    ['more', 'More', 'grid', 'more']
+  ];
+  return `<nav class="bg-white border-t border-slate-200 px-1 pt-1.5 pb-2 grid grid-cols-5 shrink-0">${tabs.map(([id, lbl, ic, sc]) => `<button type="button" data-nav="${sc}" class="flex flex-col items-center justify-center gap-0.5 py-0.5 rounded-lg ${id === active ? 'text-[#1E3A8A] font-semibold' : 'text-slate-500 hover:text-slate-800'}"><i data-lucide="${ic}" class="w-4.5 h-4.5 ${id === active ? 'stroke-[2.3]' : ''}"></i><span class="text-[10px]">${lbl}</span></button>`).join('')}</nav>`;
+}
+
+function renderStickyAction(html) {
+  return `<div class="bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-2.5 shrink-0">${html}</div>`;
+}
+
+function renderSCStepper(activeStep, nextTip) {
+  const steps = [[1, 'Request'], [2, 'Stock'], [3, 'Purchase'], [4, 'GRN'], [5, 'Issue']];
+  return `
+    <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+      <div class="flex items-center justify-between">
+        ${steps.map(([n, lbl], idx) => {
+          const done = n < activeStep, curr = n === activeStep;
+          return `<div class="flex items-center ${idx < steps.length - 1 ? 'flex-1' : ''}">
+            <div class="flex flex-col items-center gap-0.5 shrink-0">
+              <span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center ${done ? 'bg-emerald-600 text-white' : curr ? 'bg-[#1E3A8A] text-white ring-4 ring-blue-100' : 'bg-slate-100 text-slate-400 border border-slate-200'}">${done ? '✓' : n}</span>
+              <span class="text-[10px] ${curr ? 'font-bold text-[#1E3A8A]' : done ? 'text-emerald-700 font-medium' : 'text-slate-400'}">${lbl}</span>
+            </div>
+            ${idx < steps.length - 1 ? `<div class="h-0.5 flex-1 mx-1 -mt-4 ${done ? 'bg-emerald-500' : 'bg-slate-200'}"></div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+      ${nextTip ? `<div class="bg-blue-50/80 border border-blue-100 rounded-lg px-2.5 py-1.5 text-[11px] text-[#1E3A8A] flex items-center gap-1.5"><i data-lucide="compass" class="w-3.5 h-3.5 shrink-0"></i><span><strong>Next step:</strong> ${esc(nextTip)}</span></div>` : ''}
+    </div>`;
+}
+
+/* ==========================================================================
+   SCREEN RENDERERS (SECTIONS 5–47)
+   ========================================================================== */
+
+// 5. DASHBOARD SCREEN
+function renderDashboard() {
+  const u = currentUser();
+  const unread = state.notifications.filter((n) => n.unread).length;
+  const pendMR = state.materialRequests.filter((m) => m.status !== 'Completed').length;
+  const lowMat = state.materials.filter((m) => stockStatus(m) !== 'In Stock').length;
+  const openPO = state.purchaseOrders.filter((p) => !['Closed', 'Cancelled', 'Fully Received'].includes(p.status)).length;
+  const issuedToday = state.materialIssues.length;
+
+  return `
+    <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+      <div>
+        <div class="text-[11px] font-medium text-[#1D4ED8] uppercase tracking-wide">Cryo ERP • Supply Chain</div>
+        <div class="text-base font-semibold text-slate-900">Hello, ${esc(u.name.split(' ')[0])}</div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-nav="notifications" class="relative p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700" aria-label="Notifications">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          ${unread > 0 ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center">${unread}</span>` : ''}
+        </button>
+        <button type="button" data-nav="profile" class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold flex items-center justify-center">${esc(u.name.split(' ').map((x) => x[0]).join(''))}</button>
+      </div>
+    </div>
+
+    <div class="phone-scroll p-3.5 space-y-4">
+      <div class="grid grid-cols-2 gap-2.5">
+        <button type="button" data-nav="mr-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]">
+          <div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Pending Requests</span><i data-lucide="clipboard-list" class="w-4 h-4 text-[#1D4ED8]"></i></div>
+          <div class="text-xl font-bold text-slate-900">${pendMR}</div>
+        </button>
+        <button type="button" data-nav="inventory" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]">
+          <div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Low / Out Stock</span><i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i></div>
+          <div class="text-xl font-bold text-slate-900">${lowMat}</div>
+        </button>
+        <button type="button" data-nav="po-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]">
+          <div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Open POs</span><i data-lucide="shopping-cart" class="w-4 h-4 text-[#1E3A8A]"></i></div>
+          <div class="text-xl font-bold text-slate-900">${openPO}</div>
+        </button>
+        <button type="button" data-nav="mi-list" class="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-[#1D4ED8]">
+          <div class="flex justify-between mb-1"><span class="text-xs text-slate-500 font-medium">Issued Today</span><i data-lucide="package-check" class="w-4 h-4 text-emerald-600"></i></div>
+          <div class="text-xl font-bold text-slate-900">${issuedToday}</div>
+        </button>
+      </div>
+
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Quick Actions</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-nav="create-mi" class="bg-[#1E3A8A] text-white rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="send" class="w-4 h-4"></i><span>Issue Mat.</span></button>
+          <button type="button" data-nav="create-po" class="bg-white border border-slate-200 text-slate-800 rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="file-plus" class="w-4 h-4 text-[#1E3A8A]"></i><span>Create PO</span></button>
+          <button type="button" data-nav="create-grn" class="bg-white border border-slate-200 text-slate-800 rounded-xl py-2.5 px-2 flex flex-col items-center gap-1 text-[11px] font-medium"><i data-lucide="package-plus" class="w-4 h-4 text-[#1E3A8A]"></i><span>Create GRN</span></button>
+        </div>
+      </div>
+
+      <!-- Simple Supply Chain Flow Strip -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+        <div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-800">Supply Chain Flow (Tap any step)</span><span class="text-[10px] font-medium text-[#1D4ED8]">Step 1 → 5</span></div>
+        <div class="grid grid-cols-5 gap-1 text-center">
+          <button type="button" data-nav="mr-list" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">${state.materialRequests.length}</div><div class="text-[10px] font-medium">1. MR</div></button>
+          <button type="button" data-nav="stock-check" class="p-1.5 rounded-lg bg-amber-50"><div class="text-xs font-bold text-amber-700">${lowMat}</div><div class="text-[10px] font-medium text-amber-800">2. Stock</div></button>
+          <button type="button" data-nav="po-list" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">${state.purchaseOrders.length}</div><div class="text-[10px] font-medium">3. PO</div></button>
+          <button type="button" data-nav="grn-list" class="p-1.5 rounded-lg bg-blue-50/70"><div class="text-xs font-bold text-[#1E3A8A]">${state.grns.length}</div><div class="text-[10px] font-medium">4. GRN</div></button>
+          <button type="button" data-nav="mi-list" class="p-1.5 rounded-lg bg-emerald-50"><div class="text-xs font-bold text-emerald-700">${state.materialIssues.length}</div><div class="text-[10px] font-medium text-emerald-800">5. Issue</div></button>
+        </div>
+      </div>
+
+      <!-- Pending Material Requests -->
+      <div>
+        <div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-slate-500 uppercase">Pending Material Requests</span><button type="button" data-nav="mr-list" class="text-xs font-medium text-[#1D4ED8]">View All</button></div>
+        ${state.materialRequests.filter((m) => m.status !== 'Completed').map((m) => {
+          const chk = calcStockCheck(m);
+          return `
+            <button type="button" data-open="stock-check" data-key="mrId" data-val="${m.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 space-y-1.5 hover:border-[#1D4ED8]">
+              <div class="flex justify-between items-center"><span class="text-xs font-semibold text-[#1D4ED8]">${esc(m.id)} • ${esc(m.proId)}</span>${badgeHTML(chk.verdict)}</div>
+              <div class="text-sm font-semibold text-slate-900">${esc(m.product)} (${m.prodQty} units)</div>
+              <div class="text-[11px] text-slate-500">Required by ${esc(m.requiredDate)} • Tap to check stock</div>
+            </button>`;
+        }).join('')}
+      </div>
+
+      <!-- Recent Activity -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase mb-2">Recent Activity</div>
+        <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">
+          <div class="px-3 py-2.5 flex justify-between"><span><strong>MI-001</strong> issued to PRO-001</span><span class="text-slate-400">Nov 18</span></div>
+          <div class="px-3 py-2.5 flex justify-between"><span><strong>PO-001</strong> created for ABC Industrial</span><span class="text-slate-400">Nov 17</span></div>
+          <div class="px-3 py-2.5 flex justify-between"><span><strong>GRN-001</strong> awaiting confirmation</span><span class="text-slate-400">Today</span></div>
+        </div>
+      </div>
+    </div>
+    ${renderBottomNav('home')}
+  `;
+}
+
+// 6. MATERIAL REQUESTS LIST
+function renderMRList() {
+  const tabs = ['All', 'Pending', 'Partially Issued', 'Purchase Required', 'Fully Issued', 'Completed'];
+  const q = state.filters.mrSearch.trim().toLowerCase();
+  const list = state.materialRequests.filter((m) => (state.filters.mrTab === 'All' || m.status === state.filters.mrTab) && (!q || `${m.id} ${m.proId} ${m.product}`.toLowerCase().includes(q)));
+  return `
+    ${renderTopBar('Material Requests', { back: true, fallback: 'requests-hub' })}
+    <div class="bg-white border-b border-slate-200 px-3.5 pt-2.5 pb-2 space-y-2 shrink-0">
+      <input data-filter="mrSearch" value="${esc(state.filters.mrSearch)}" type="text" placeholder="Search MR, PRO, or product..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" />
+      <div class="flex gap-1.5 overflow-x-auto no-scrollbar">${tabs.map((t) => `<button type="button" data-filter-tab="mrTab" data-val="${t}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${state.filters.mrTab === t ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${t}</button>`).join('')}</div>
+    </div>
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${list.map((m) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start">
+            <div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(m.id)} • ${esc(m.proId)}</div><div class="text-sm font-semibold text-slate-900">${esc(m.product)} (${m.prodQty} units)</div><div class="text-xs text-slate-500">${m.items.length} materials • Req: ${esc(m.requiredDate)}</div></div>
+            ${badgeHTML(m.status)}
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+            <button type="button" data-open="mr-details" data-key="mrId" data-val="${m.id}" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">View Details</button>
+            <button type="button" data-open="stock-check" data-key="mrId" data-val="${m.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Check Stock</button>
+          </div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('requests')}
+  `;
+}
+
+// 7. MATERIAL REQUEST DETAILS
+function renderMRDetails() {
+  const m = getMR(state.selected.mrId);
+  return `
+    ${renderTopBar(m.id, { back: true, fallback: 'mr-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(1, 'Tap "Check Stock Availability" to see what can be issued now vs purchased.')}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
+        <div class="flex justify-between items-center"><strong class="text-sm text-slate-900">${esc(m.product)} (${m.prodQty} units)</strong>${badgeHTML(m.status)}</div>
+        <div class="text-slate-600">PRO: <strong>${esc(m.proId)}</strong> • BOM: ${esc(m.bomId)} • By: ${esc(m.requestedBy)}</div>
+        <div class="text-slate-500">Requested: ${esc(m.requestDate)} • Required: ${esc(m.requiredDate)}</div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Req</th><th class="py-2 px-2 text-center">Iss</th><th class="py-2 px-3 text-right">Rem</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            ${m.items.map((it) => `<tr><td class="py-2 px-3 font-medium">${esc(it.name)}</td><td class="py-2 px-2 text-center">${it.requested}</td><td class="py-2 px-2 text-center text-emerald-700 font-semibold">${it.issued}</td><td class="py-2 px-3 text-right font-bold text-[#1E3A8A]">${Math.max(0, it.requested - it.issued)} ${esc(it.unit)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-open="stock-check" data-key="mrId" data-val="${m.id}" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Check Stock Availability →</button>`)}
+  `;
+}
+
+// 8. STOCK AVAILABILITY CHECK SCREEN
+function renderStockCheck() {
+  const m = getMR(state.selected.mrId);
+  const chk = calcStockCheck(m);
+  return `
+    ${renderTopBar(`Stock Check: ${m.id}`, { back: true, fallback: 'mr-details' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(2, chk.verdict === 'Full Stock Available' ? 'Full stock available — tap "Issue Materials" below!' : chk.verdict === 'Partial Stock Available' ? 'Issue available stock now & purchase the remaining shortage.' : 'No stock available — create a Purchase Requirement.')}
+      <div class="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+        <div><div class="text-xs font-semibold text-slate-900">${esc(m.proId)} • ${esc(m.product)}</div><div class="text-[11px] text-slate-500">Live inventory comparison</div></div>
+        ${badgeHTML(chk.verdict)}
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-[11px]">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500"><tr><th class="py-2 px-2.5">Material</th><th class="py-2 px-1 text-center">Rem</th><th class="py-2 px-1 text-center">Avail</th><th class="py-2 px-1 text-center">Issue</th><th class="py-2 px-2 text-right">Short</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            ${chk.rows.map((r) => `
+              <tr>
+                <td class="py-2 px-2.5 font-medium text-slate-900">${esc(r.name)}</td>
+                <td class="py-2 px-1 text-center">${r.remaining}</td>
+                <td class="py-2 px-1 text-center font-semibold">${r.available}</td>
+                <td class="py-2 px-1 text-center text-emerald-700 font-bold">${r.issuable}</td>
+                <td class="py-2 px-2 text-right ${r.shortage > 0 ? 'text-rose-600 font-bold' : 'text-slate-400'}">${r.shortage}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${renderStickyAction(
+      chk.verdict === 'Full Stock Available'
+        ? `<button type="button" data-open="create-mi" data-key="mrId" data-val="${m.id}" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Next: Issue All Materials →</button>`
+        : chk.verdict === 'Partial Stock Available'
+          ? `<button type="button" data-nav="create-pr" class="px-3 py-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-xs font-semibold">Purchase Shortage</button><button type="button" data-open="create-mi" data-key="mrId" data-val="${m.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Issue Available →</button>`
+          : `<button type="button" data-nav="create-pr" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Create Purchase Requirement →</button>`
+    )}
+  `;
+}
+
+// 9. MATERIALS MASTER LIST
+function renderMaterialsList() {
+  const q = state.filters.matSearch.trim().toLowerCase();
+  const list = state.materials.filter((m) => !q || `${m.code} ${m.name} ${m.category}`.toLowerCase().includes(q));
+  return `
+    ${renderTopBar('Materials Master', {
+      back: true, fallback: 'inventory-hub',
+      right: `<button type="button" data-nav="add-material" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>`
+    })}
+    <div class="bg-white border-b border-slate-200 px-3.5 py-2.5 shrink-0 flex gap-2">
+      <input data-filter="matSearch" value="${esc(state.filters.matSearch)}" type="text" placeholder="Search code or material..." class="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" />
+      ${currentUser().canApproveNewMat ? `<button type="button" data-nav="material-approval" class="px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold whitespace-nowrap">Approvals (${state.pendingMaterialApprovals.length})</button>` : ''}
+    </div>
+    <div class="phone-scroll p-3.5">
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Code / Name</th><th class="py-2 px-2">Unit</th><th class="py-2 px-2 text-right">Status</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            ${list.map((m) => `<tr class="hover:bg-slate-50 cursor-pointer" data-open="material-details" data-key="matId" data-val="${m.id}"><td class="py-2.5 px-3"><div class="text-[10px] font-semibold text-[#1D4ED8]">${esc(m.code)}</div><div class="font-semibold text-slate-900">${esc(m.name)}</div></td><td class="py-2.5 px-2 text-slate-600">${esc(m.unit)}</td><td class="py-2.5 px-2 text-right">${badgeHTML(m.active ? 'Active' : 'Draft')}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${renderBottomNav('inventory')}
+  `;
+}
+
+// 10 & 12. ADD / EDIT MATERIAL SCREEN (No stock qty field per Sections 10 & 12)
+function renderMaterialForm(isEdit = false) {
+  const m = isEdit ? getMat(state.selected.matId) : { name: '', unit: 'Pieces', category: 'Cooling', spec: '', minStock: 5, supplierId: 'SUP-01' };
+  return `
+    ${renderTopBar(isEdit ? `Edit ${m.code}` : 'Add Material', { back: true, fallback: 'materials-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3">
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Material Name *</label><input id="matName" type="text" value="${esc(m.name)}" placeholder="e.g., Copper Tubing 1/4 inch" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block text-xs font-medium text-slate-700 mb-1">Unit *</label><select id="matUnit" class="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg">${['Pieces', 'Sheets', 'Kilograms', 'Metres', 'Litres', 'Sets'].map((u) => `<option ${m.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+          <div><label class="block text-xs font-medium text-slate-700 mb-1">Min Stock Level</label><input id="matMin" type="number" min="0" value="${m.minStock}" class="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Category</label><input id="matCat" type="text" value="${esc(m.category)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Specification</label><textarea id="matSpec" rows="2" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg">${esc(m.spec)}</textarea></div>
+        <div class="text-[11px] text-slate-400">Stock quantities are updated only via GRN, Material Issue, or authorized Stock Adjustment.</div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-mat" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Save Material'}</button>`)}
+  `;
+}
+
+// 11. MATERIAL DETAILS SCREEN
+function renderMaterialDetails() {
+  const m = getMat(state.selected.matId);
+  const sup = getSup(m.supplierId);
+  return `
+    ${renderTopBar('Material Details', { back: true, fallback: 'materials-list', right: `<button type="button" data-nav="edit-material" class="px-2.5 py-1 text-xs font-medium rounded-lg border border-slate-200">Edit</button>` })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+        <div class="flex justify-between items-start"><div><div class="text-xs font-semibold text-[#1D4ED8]">${esc(m.code)} • ${esc(m.category)}</div><div class="text-base font-semibold text-slate-900">${esc(m.name)}</div></div>${badgeHTML(stockStatus(m))}</div>
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+          <div><span class="text-[10px] text-slate-400 block">Available</span><strong>${availStock(m)} ${esc(m.unit)}</strong></div>
+          <div><span class="text-[10px] text-slate-400 block">Min Stock</span><strong>${m.minStock}</strong></div>
+          <div><span class="text-[10px] text-slate-400 block">Supplier</span><strong class="truncate block">${esc(sup.name.split(' ')[0])}</strong></div>
+        </div>
+        <div class="text-xs text-slate-600 pt-1">${esc(m.spec)}</div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-nav="stock-history" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">Stock History</button><button type="button" data-nav="create-pr" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Create Purchase Req</button>`)}
+  `;
+}
+
+// 13. NEW MATERIAL APPROVAL SCREEN
+function renderMaterialApproval() {
+  return `
+    ${renderTopBar('New Material Approvals', { back: true, fallback: 'materials-list' })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.pendingMaterialApprovals.length === 0 ? `<div class="bg-white border border-slate-200 rounded-xl p-6 text-center text-xs text-slate-500">No pending material requests from Production.</div>` : state.pendingMaterialApprovals.map((a) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+          <div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(a.name)}</strong>${badgeHTML(a.status)}</div>
+          <div class="text-slate-600">Unit: ${esc(a.unit)} • Ref ${esc(a.proId)} • By ${esc(a.requestedBy)}</div>
+          <div class="text-slate-500">${esc(a.spec)}</div>
+          <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+            <button type="button" data-action="reject-nma" data-id="${a.id}" class="py-1.5 rounded-lg bg-rose-50 text-rose-700 font-semibold">Reject</button>
+            <button type="button" data-action="approve-nma" data-id="${a.id}" class="py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">Approve & Add</button>
+          </div>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+// 14. INVENTORY SCREEN
+function renderInventory() {
+  const q = state.filters.invSearch.trim().toLowerCase();
+  const list = state.materials.filter((m) => (state.filters.invTab === 'All' || stockStatus(m) === state.filters.invTab) && (!q || `${m.name} ${m.code}`.toLowerCase().includes(q)));
+  return `
+    ${renderTopBar('Inventory', { back: true, fallback: 'inventory-hub' })}
+    <div class="bg-white border-b border-slate-200 px-3.5 pt-2.5 pb-2 space-y-2 shrink-0">
+      <input data-filter="invSearch" value="${esc(state.filters.invSearch)}" type="text" placeholder="Search materials..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" />
+      <div class="flex gap-1.5 overflow-x-auto no-scrollbar">${['All', 'In Stock', 'Low Stock', 'Out of Stock'].map((t) => `<button type="button" data-filter-tab="invTab" data-val="${t}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${state.filters.invTab === t ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${t}</button>`).join('')}</div>
+    </div>
+    <div class="phone-scroll p-3.5">
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Avail</th><th class="py-2 px-3 text-right">Status</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            ${list.map((m) => `<tr class="hover:bg-slate-50 cursor-pointer" data-open="inventory-details" data-key="matId" data-val="${m.id}"><td class="py-2.5 px-3 font-semibold text-slate-900">${esc(m.name)}<div class="text-[10px] font-normal text-slate-400">${esc(m.code)}</div></td><td class="py-2.5 px-2 text-center font-bold">${availStock(m)} <span class="text-[10px] font-normal text-slate-500">${esc(m.unit)}</span></td><td class="py-2.5 px-3 text-right">${badgeHTML(stockStatus(m))}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${renderBottomNav('inventory')}
+  `;
+}
+
+// 15. INVENTORY DETAILS SCREEN
+function renderInventoryDetails() {
+  const m = getMat(state.selected.matId);
+  const moves = state.stockHistory.filter((h) => h.matId === m.id);
+  return `
+    ${renderTopBar('Inventory Details', { back: true, fallback: 'inventory' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        <div class="flex justify-between"><div><div class="text-xs text-[#1D4ED8] font-semibold">${esc(m.code)}</div><div class="text-base font-semibold text-slate-900">${esc(m.name)}</div></div>${badgeHTML(stockStatus(m))}</div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="bg-slate-50 rounded-lg p-2"><span class="text-[10px] text-slate-400 block">Physical</span><strong>${m.physical}</strong></div>
+          <div class="bg-blue-50 rounded-lg p-2"><span class="text-[10px] text-[#1D4ED8] block">Available</span><strong class="text-[#1E3A8A]">${availStock(m)}</strong></div>
+          <div class="bg-amber-50 rounded-lg p-2"><span class="text-[10px] text-amber-700 block">Min Level</span><strong>${m.minStock}</strong></div>
+        </div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+        <div class="text-xs font-semibold text-slate-500 uppercase">Recent Stock Movements</div>
+        ${moves.length ? moves.map((h) => `<div class="flex justify-between text-xs py-1.5 border-b border-slate-100 last:border-0"><div><div class="font-medium">${esc(h.type)} (${esc(h.ref)})</div><div class="text-[10px] text-slate-400">${esc(h.date)}</div></div><span class="font-bold ${h.dir === 'in' ? 'text-emerald-600' : 'text-rose-600'}">${h.dir === 'in' ? '+' : '-'}${h.qty}</span></div>`).join('') : '<div class="text-xs text-slate-400">No recent movements.</div>'}
+      </div>
+    </div>
+    ${renderStickyAction(`
+      <button type="button" data-nav="stock-history" class="px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">History</button>
+      ${currentUser().canAdjustStock ? `<button type="button" data-nav="stock-adjustment" class="px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">Adjust</button>` : ''}
+      <button type="button" data-nav="create-pr" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Purchase Req</button>
+    `)}
+  `;
+}
+
+// 16. STOCK HISTORY SCREEN
+function renderStockHistory() {
+  const list = state.stockHistory.filter((h) => state.filters.histType === 'All' || h.type === state.filters.histType);
+  return `
+    ${renderTopBar('Stock History', { back: true, fallback: 'inventory-hub' })}
+    <div class="bg-white border-b border-slate-200 px-3.5 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+      ${['All', 'Opening Stock', 'GRN', 'Material Issue', 'Material Return', 'Adjustment'].map((t) => `<button type="button" data-filter-tab="histType" data-val="${t}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${state.filters.histType === t ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${t}</button>`).join('')}
+    </div>
+    <div class="phone-scroll p-3.5 space-y-2">
+      ${list.map((h) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between text-xs">
+          <div><div class="font-semibold text-slate-900">${esc(h.name)}</div><div class="text-[11px] text-slate-500">${esc(h.type)} • ${esc(h.ref)} • ${esc(h.date)}</div></div>
+          <div class="text-right"><div class="font-bold text-sm ${h.dir === 'in' ? 'text-emerald-600' : 'text-rose-600'}">${h.dir === 'in' ? '+' : '-'}${h.qty}</div><div class="text-[10px] text-slate-400">Bal: ${h.balance}</div></div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('inventory')}
+  `;
+}
+
+// 17. STOCK ADJUSTMENT SCREEN
+function renderStockAdjustment() {
+  const m = getMat(state.selected.matId);
+  return `
+    ${renderTopBar('Stock Adjustment', { back: true, fallback: 'inventory-details' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${!currentUser().canAdjustStock ? `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">Only authorized Supply Chain Managers can confirm stock adjustments.</div>` : ''}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3">
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Material</label><select id="adjMat" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg">${state.materials.map((x) => `<option value="${x.id}" ${x.id === m.id ? 'selected' : ''}>${esc(x.name)} (Current: ${x.physical})</option>`).join('')}</select></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block text-xs font-medium text-slate-700 mb-1">Type</label><select id="adjType" class="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg"><option value="in">Increase (+)</option><option value="out">Decrease (-)</option></select></div>
+          <div><label class="block text-xs font-medium text-slate-700 mb-1">Quantity *</label><input id="adjQty" type="number" min="1" value="1" class="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        </div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Reason *</label><input id="adjReason" type="text" placeholder="Physical count audit / damaged write-off" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="confirm-adj" ${currentUser().canAdjustStock ? '' : 'disabled'} class="flex-1 py-2.5 rounded-xl ${currentUser().canAdjustStock ? 'bg-[#1E3A8A] text-white' : 'bg-slate-200 text-slate-400'} text-xs font-semibold">Confirm Adjustment</button>`)}
+  `;
+}
+
+// 18. SUPPLIERS LIST
+function renderSuppliersList() {
+  const q = state.filters.supSearch.trim().toLowerCase();
+  const list = state.suppliers.filter((s) => !q || `${s.name} ${s.contact} ${s.phone}`.toLowerCase().includes(q));
+  return `
+    ${renderTopBar('Suppliers', { back: true, fallback: 'purchase-hub', right: `<button type="button" data-nav="add-supplier" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Add</button>` })}
+    <div class="bg-white border-b border-slate-200 px-3.5 py-2.5 shrink-0"><input data-filter="supSearch" value="${esc(state.filters.supSearch)}" type="text" placeholder="Search supplier name or phone..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${list.map((s) => `<button type="button" data-open="supplier-details" data-key="supId" data-val="${s.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:border-[#1D4ED8]"><div><div class="text-sm font-semibold text-slate-900">${esc(s.name)}</div><div class="text-xs text-slate-500">${esc(s.contact || 'Sales Desk')} • ${esc(s.phone)}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}
+    </div>
+    ${renderBottomNav('purchase')}
+  `;
+}
+
+// 19 & 21. ADD / EDIT SUPPLIER
+function renderSupplierForm(isEdit = false) {
+  const s = isEdit ? getSup(state.selected.supId) : { name: '', contact: '', phone: '', email: '', address: '', gstin: '' };
+  return `
+    ${renderTopBar(isEdit ? 'Edit Supplier' : 'Add Supplier', { back: true, fallback: 'suppliers-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3">
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Supplier / Company Name *</label><input id="supName" type="text" value="${esc(s.name)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Phone Number *</label><input id="supPhone" type="tel" value="${esc(s.phone)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Contact Person</label><input id="supContact" type="text" value="${esc(s.contact)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Email</label><input id="supEmail" type="email" value="${esc(s.email)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+      </div>
+      <details class="bg-white border border-slate-200 rounded-xl p-3.5"><summary class="text-xs font-semibold text-[#1E3A8A] cursor-pointer">Optional GSTIN & Address</summary><div class="mt-3 space-y-2.5"><div><label class="block text-xs mb-1">GSTIN</label><input id="supGstin" type="text" value="${esc(s.gstin)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block text-xs mb-1">Address</label><input id="supAddress" type="text" value="${esc(s.address)}" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div></div></details>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-sup" data-mode="${isEdit ? 'edit' : 'create'}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">${isEdit ? 'Save Changes' : 'Save Supplier'}</button>`)}
+  `;
+}
+
+// 20. SUPPLIER DETAILS
+function renderSupplierDetails() {
+  const s = getSup(state.selected.supId);
+  return `
+    ${renderTopBar('Supplier Details', { back: true, fallback: 'suppliers-list', right: `<button type="button" data-nav="edit-supplier" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Edit</button>` })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+        <div class="text-base font-semibold text-slate-900">${esc(s.name)}</div>
+        <div class="text-slate-600">${esc(s.contact)} • ${esc(s.phone)}</div>
+        <div class="text-slate-500">${esc(s.email)} • ${esc(s.address)}</div>
+        ${s.gstin ? `<div class="text-[11px] text-[#1D4ED8]">GSTIN: ${esc(s.gstin)}</div>` : ''}
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button type="button" data-action="call" data-name="${esc(s.name)}" data-phone="${esc(s.phone)}" class="py-2 rounded-lg bg-slate-100 text-slate-800 font-medium">Call Supplier</button>
+          <button type="button" data-nav="create-po" class="py-2 rounded-lg bg-[#1E3A8A] text-white font-semibold">+ Create PO</button>
+        </div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
+        <div class="font-semibold text-slate-500 uppercase">Supplied Materials</div>
+        <div class="flex flex-wrap gap-1.5">${(s.materials || []).map((m) => `<span class="px-2.5 py-1 rounded-full bg-blue-50 text-[#1D4ED8] font-medium">${esc(m)}</span>`).join('')}</div>
+      </div>
+    </div>
+  `;
+}
+
+// 22. PURCHASE REQUIREMENTS LIST
+function renderPRList() {
+  return `
+    ${renderTopBar('Purchase Requirements', { back: true, fallback: 'purchase-hub', right: `<button type="button" data-nav="create-pr" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ New</button>` })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.purchaseReqs.map((pr) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start"><div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(pr.id)} • Ref ${esc(pr.mrId || 'Stock')}</div><div class="text-sm font-semibold text-slate-900">${pr.items.map((i) => `${i.name} (${i.required})`).join(', ')}</div><div class="text-xs text-slate-500">Required: ${esc(pr.requiredDate)}</div></div>${badgeHTML(pr.status)}</div>
+          <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+            <button type="button" data-open="pr-details" data-key="prId" data-val="${pr.id}" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">View Details</button>
+            <button type="button" data-open="create-po" data-key="prId" data-val="${pr.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Create PO</button>
+          </div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('purchase')}
+  `;
+}
+
+// 23. CREATE PURCHASE REQUIREMENT
+function renderCreatePR() {
+  const m = getMR(state.selected.mrId);
+  const chk = calcStockCheck(m);
+  const shortages = chk.rows.filter((r) => r.shortage > 0);
+  return `
+    ${renderTopBar('Create Purchase Req', { back: true, fallback: 'pr-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs">
+        <div class="font-semibold text-[#1D4ED8]">Auto-loaded Shortages from ${esc(m.id)} (${esc(m.proId)})</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+        ${(shortages.length ? shortages : [{ name: 'Steel Sheet', shortage: 3, unit: 'Sheets' }, { name: 'Temperature Controller', shortage: 2, unit: 'Pieces' }]).map((s) => `<div class="flex justify-between py-1.5 border-b border-slate-100 last:border-0"><span class="font-medium">${esc(s.name)}</span><strong class="text-rose-600">${s.shortage} ${esc(s.unit)}</strong></div>`).join('')}
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Required Date *</label><input id="prReqDate" type="date" value="2026-11-22" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block text-xs font-medium text-slate-700 mb-1">Notes (Optional)</label><textarea id="prNotes" rows="2" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg"></textarea></div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-pr" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Purchase Requirement</button>`)}
+  `;
+}
+
+// 24. PURCHASE REQUIREMENT DETAILS
+function renderPRDetails() {
+  const pr = getPR(state.selected.prId);
+  return `
+    ${renderTopBar(pr.id, { back: true, fallback: 'pr-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(3, 'Select a supplier and create a Purchase Order for these shortages.')}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1">
+        <div class="flex justify-between"><strong>Ref ${esc(pr.mrId)} (${esc(pr.proId)})</strong>${badgeHTML(pr.status)}</div>
+        <div class="text-slate-500">Required Date: ${esc(pr.requiredDate)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Req</th><th class="py-2 px-2 text-center">Ord</th><th class="py-2 px-3 text-right">Rec</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">${pr.items.map((i) => `<tr><td class="py-2 px-3 font-medium">${esc(i.name)}</td><td class="py-2 px-2 text-center">${i.required}</td><td class="py-2 px-2 text-center font-semibold text-[#1D4ED8]">${i.ordered}</td><td class="py-2 px-3 text-right text-emerald-700">${i.received}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-open="create-po" data-key="prId" data-val="${pr.id}" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Create Purchase Order →</button>`)}
+  `;
+}
+
+// 25. PURCHASE ORDERS LIST
+function renderPOList() {
+  return `
+    ${renderTopBar('Purchase Orders', { back: true, fallback: 'purchase-hub', right: `<button type="button" data-nav="create-po" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Create</button>` })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.purchaseOrders.map((po) => {
+        const sup = getSup(po.supplierId);
+        const tot = calcPOTotals(po.items, po.discount, po.taxPct).grandTotal;
+        return `
+          <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-start"><div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(po.id)} • ${esc(po.date)}</div><div class="text-sm font-semibold text-slate-900">${esc(sup.name)}</div><div class="text-xs text-slate-500">${po.items.length} materials • Due ${esc(po.expectedDelivery)}</div></div>${badgeHTML(po.status)}</div>
+            <div class="text-xs font-bold text-slate-900">${fmtINR(tot)}</div>
+            <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+              <button type="button" data-open="po-details" data-key="poId" data-val="${po.id}" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">View Details</button>
+              <button type="button" data-open="create-grn" data-key="poId" data-val="${po.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Receive (GRN)</button>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+    ${renderBottomNav('purchase')}
+  `;
+}
+
+// 26 & 30. CREATE / EDIT PURCHASE ORDER
+function renderPOForm(isEdit = false) {
+  if (!state.poDraft) navigate(isEdit ? 'edit-po' : 'create-po', { skipHistory: true });
+  const d = state.poDraft;
+  const sup = getSup(d.supplierId);
+  const tot = calcPOTotals(d.items, d.discount, d.taxPct);
+  return `
+    ${renderTopBar(isEdit ? `Edit ${d.id}` : 'Create Purchase Order', { back: true, fallback: 'po-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        <div class="flex justify-between items-center"><span class="text-xs font-semibold text-[#1E3A8A] uppercase">Supplier</span><button type="button" data-action="open-sheet" data-sheet="add-sup" class="text-xs font-semibold text-[#1D4ED8]">+ Add New Supplier</button></div>
+        <select id="poSupSelect" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg">${state.suppliers.map((s) => `<option value="${s.id}" ${d.supplierId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
+        <div class="bg-slate-50 rounded-lg p-2 text-[11px] text-slate-600">${esc(sup.phone)} • ${esc(sup.email)}</div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+        <div class="text-xs font-semibold text-slate-500 uppercase">Materials & Pricing</div>
+        ${d.items.map((it, idx) => `
+          <div class="bg-slate-50 rounded-lg p-2.5 space-y-1.5 text-xs">
+            <div class="font-semibold text-slate-900">${esc(it.name)}</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div><span class="text-[10px] text-slate-500 block">Qty</span><input data-po-qty="${idx}" type="number" min="1" value="${it.qty}" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg" /></div>
+              <div><span class="text-[10px] text-slate-500 block">Unit ₹</span><input data-po-price="${idx}" type="number" value="${it.unitPrice}" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg" /></div>
+              <div class="text-right"><span class="text-[10px] text-slate-500 block">Total</span><div class="py-1 font-bold">${fmtINR(it.qty * it.unitPrice)}</div></div>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
+        <div class="flex justify-between text-slate-600"><span>Subtotal</span><span>${fmtINR(tot.subtotal)}</span></div>
+        <div class="flex justify-between text-slate-600"><span>GST (${d.taxPct}%)</span><span>${fmtINR(tot.tax)}</span></div>
+        <div class="flex justify-between font-bold text-sm text-[#1E3A8A] pt-1 border-t border-slate-100"><span>Grand Total</span><span>${fmtINR(tot.grandTotal)}</span></div>
+      </div>
+    </div>
+    ${renderStickyAction(`
+      <button type="button" data-action="save-po" data-mode="${isEdit ? 'edit' : 'draft'}" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">${isEdit ? 'Save Changes' : 'Save Draft'}</button>
+      <button type="button" data-action="save-po" data-mode="preview" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Preview PO</button>
+    `)}
+  `;
+}
+
+// 27. PO PREVIEW SCREEN
+function renderPOPreview() {
+  const po = getPO(state.selected.poId);
+  const sup = getSup(po.supplierId);
+  const tot = calcPOTotals(po.items, po.discount, po.taxPct);
+  return `
+    ${renderTopBar('Purchase Order Preview', { back: true, fallback: 'po-details' })}
+    <div class="phone-scroll p-3.5">
+      <div class="bg-white border border-slate-300 rounded-xl p-4 space-y-3 text-xs">
+        <div class="flex justify-between border-b border-slate-200 pb-2.5"><div><div class="font-bold text-sm text-[#1E3A8A]">CRYO ENTERPRISE ERP</div><div class="text-[10px] text-slate-500">Supplier Purchase Order</div></div><div class="text-right"><div class="font-bold">${esc(po.id)}</div><div class="text-[10px] text-slate-500">${esc(po.date)}</div></div></div>
+        <div class="bg-slate-50 rounded-lg p-2.5"><div class="font-semibold">${esc(sup.name)}</div><div class="text-[11px] text-slate-500">${esc(sup.phone)} • ${esc(sup.address)}</div></div>
+        ${po.items.map((i) => `<div class="flex justify-between py-1 border-b border-slate-100"><span>${esc(i.name)} × ${i.qty} ${esc(i.unit)}</span><strong>${fmtINR(i.qty * i.unitPrice)}</strong></div>`).join('')}
+        <div class="flex justify-between font-bold text-sm text-[#1E3A8A] pt-1"><span>Grand Total (Incl. GST)</span><span>${fmtINR(tot.grandTotal)}</span></div>
+      </div>
+    </div>
+    ${renderStickyAction(`
+      <button type="button" data-nav="edit-po" class="px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Edit</button>
+      <button type="button" data-action="download-pdf" data-doc="${po.id}.pdf" class="px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">PDF</button>
+      <button type="button" data-action="open-sheet" data-sheet="send-po" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Send PO</button>
+    `)}
+  `;
+}
+
+// 29. PO DETAILS SCREEN
+function renderPODetails() {
+  const po = getPO(state.selected.poId);
+  const sup = getSup(po.supplierId);
+  const tot = calcPOTotals(po.items, po.discount, po.taxPct).grandTotal;
+  return `
+    ${renderTopBar(po.id, { back: true, fallback: 'po-list', right: `<button type="button" data-nav="po-preview" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200">Preview</button>` })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(3, 'Once supplier delivers materials, tap "Receive Materials (GRN)" below.')}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
+        <div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(sup.name)}</strong>${badgeHTML(po.status)}</div>
+        <div class="text-slate-600">PO Date: ${esc(po.date)} • Expected: ${esc(po.expectedDelivery)}</div>
+        <div class="text-base font-bold text-[#1E3A8A]">${fmtINR(tot)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Ord</th><th class="py-2 px-2 text-center">Rec</th><th class="py-2 px-3 text-right">Rem</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">${po.items.map((i) => `<tr><td class="py-2 px-3 font-medium">${esc(i.name)}</td><td class="py-2 px-2 text-center">${i.qty}</td><td class="py-2 px-2 text-center text-emerald-700 font-semibold">${i.received}</td><td class="py-2 px-3 text-right font-bold">${Math.max(0, i.qty - i.received)}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-open="create-grn" data-key="poId" data-val="${po.id}" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Receive Materials (GRN) →</button>`)}
+  `;
+}
+
+// 31. GRN LIST
+function renderGRNList() {
+  return `
+    ${renderTopBar('Goods Receipt Notes (GRN)', { back: true, fallback: 'purchase-hub', right: `<button type="button" data-nav="create-grn" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ GRN</button>` })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.grns.map((g) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start"><div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(g.id)} • Ref ${esc(g.poId)}</div><div class="text-sm font-semibold text-slate-900">${esc(getSup(g.supplierId).name)}</div><div class="text-xs text-slate-500">Date: ${esc(g.date)} • ${g.items.length} materials</div></div>${badgeHTML(g.status)}</div>
+          <div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100">
+            <button type="button" data-open="grn-details" data-key="grnId" data-val="${g.id}" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">View Details</button>
+            ${!g.confirmed ? `<button type="button" data-open="confirm-grn" data-key="grnId" data-val="${g.id}" class="py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold">Confirm GRN</button>` : `<button type="button" disabled class="py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium">Stock Updated</button>`}
+          </div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('purchase')}
+  `;
+}
+
+// 32. CREATE GRN SCREEN
+function renderCreateGRN() {
+  const po = getPO(state.selected.poId);
+  const sup = getSup(po.supplierId);
+  return `
+    ${renderTopBar('Create GRN', { back: true, fallback: 'grn-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs">
+        <div class="font-semibold text-[#1D4ED8]">Auto-loaded from ${esc(po.id)} • ${esc(sup.name)}</div>
+        <div class="text-slate-600">Only accepted quantities increase usable inventory.</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        ${po.items.map((it, idx) => `
+          <div class="bg-slate-50 rounded-lg p-2.5 space-y-1.5 text-xs">
+            <div class="font-semibold text-slate-900">${esc(it.name)} (Ordered: ${it.qty} ${esc(it.unit)})</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div><span class="text-[10px] text-slate-500 block">Received</span><input data-grn-rec="${idx}" type="number" max="${it.qty}" value="${it.qty}" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg" /></div>
+              <div><span class="text-[10px] text-emerald-700 block">Accepted</span><input data-grn-acc="${idx}" type="number" max="${it.qty}" value="${it.qty}" class="w-full px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg font-semibold" /></div>
+              <div><span class="text-[10px] text-rose-700 block">Rejected</span><input data-grn-rej="${idx}" type="number" min="0" value="0" class="w-full px-2 py-1 bg-rose-50 border border-rose-200 rounded-lg" /></div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+        <div><label class="block font-medium mb-1">Supplier Invoice / Delivery Note</label><input id="grnInv" type="text" value="INV-ABC-7821" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+        <div><label class="block font-medium mb-1">Remarks (Required if rejected/short)</label><input id="grnRem" type="text" placeholder="Optional..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="review-grn" data-po="${po.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Review & Confirm GRN</button>`)}
+  `;
+}
+
+// 33. GRN CONFIRMATION SCREEN
+function renderConfirmGRN() {
+  const g = getGRN(state.selected.grnId);
+  return `
+    ${renderTopBar(`Confirm ${g.id}`, { back: true, fallback: 'grn-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(4, 'Tap "Confirm & Update Inventory" to add accepted stock and unlock Material Issue.')}
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs space-y-1">
+        <div class="font-bold text-emerald-800">${esc(g.id)} • Ref ${esc(g.poId)}</div>
+        <div class="text-slate-700">Supplier: ${esc(getSup(g.supplierId).name)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+        ${g.items.map((i) => `<div class="flex justify-between py-1 border-b border-slate-100 last:border-0"><span class="font-medium">${esc(i.name)}</span><span class="font-bold text-emerald-700">+${i.accepted} ${esc(i.unit)} ${i.rejected > 0 ? `(Rej: ${i.rejected})` : ''}</span></div>`).join('')}
+      </div>
+    </div>
+    ${renderStickyAction(g.confirmed ? `<button type="button" disabled class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 text-xs font-semibold">Already Confirmed & Synced</button>` : `<button type="button" data-action="confirm-grn-final" data-id="${g.id}" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirm & Update Inventory</button>`)}
+  `;
+}
+
+// 34. GRN DETAILS SCREEN
+function renderGRNDetails() {
+  const g = getGRN(state.selected.grnId);
+  return `
+    ${renderTopBar(g.id, { back: true, fallback: 'grn-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(4, g.confirmed ? 'Inventory updated! Tap "Issue Materials to Production" below.' : 'Confirm GRN first to add accepted materials to inventory.')}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1">
+        <div class="flex justify-between"><strong class="text-sm">${esc(getSup(g.supplierId).name)}</strong>${badgeHTML(g.status)}</div>
+        <div class="text-slate-500">PO: ${esc(g.poId)} • Date: ${esc(g.date)} • By: ${esc(g.receivedBy)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Rec</th><th class="py-2 px-2 text-center">Acc</th><th class="py-2 px-3 text-right">Rej</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">${g.items.map((i) => `<tr><td class="py-2 px-3 font-medium">${esc(i.name)}</td><td class="py-2 px-2 text-center">${i.received}</td><td class="py-2 px-2 text-center text-emerald-700 font-bold">${i.accepted}</td><td class="py-2 px-3 text-right text-rose-600">${i.rejected}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-open="create-mi" data-key="mrId" data-val="${g.mrId || 'MR-001'}" class="w-full py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Next: Issue Materials to Production →</button>`)}
+  `;
+}
+
+// 35. MATERIAL ISSUES LIST
+function renderMIList() {
+  return `
+    ${renderTopBar('Material Issues', { back: true, fallback: 'requests-hub', right: `<button type="button" data-nav="create-mi" class="px-2.5 py-1.5 rounded-lg bg-[#1E3A8A] text-white text-xs font-medium">+ Issue</button>` })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${state.materialIssues.map((mi) => `
+        <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between items-start"><div><div class="text-[11px] font-semibold text-[#1D4ED8]">${esc(mi.id)} • ${esc(mi.mrId)} • ${esc(mi.proId)}</div><div class="text-sm font-semibold text-slate-900">${esc(mi.product)}</div><div class="text-xs text-slate-500">${esc(mi.issueType)} • ${esc(mi.date)}</div></div>${badgeHTML(mi.receiptStatus)}</div>
+          <button type="button" data-open="mi-details" data-key="miId" data-val="${mi.id}" class="w-full py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] text-xs font-medium">View Details</button>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('requests')}
+  `;
+}
+
+// 36. CREATE MATERIAL ISSUE
+function renderCreateMI() {
+  const mr = getMR(state.selected.mrId);
+  const chk = calcStockCheck(mr);
+  return `
+    ${renderTopBar('Create Material Issue', { back: true, fallback: 'mi-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs">
+        <div class="font-semibold text-[#1D4ED8]">${esc(mr.id)} • ${esc(mr.proId)} (${esc(mr.product)})</div>
+        <div class="text-slate-600">Issue quantity defaults to maximum available stock.</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        ${chk.rows.map((r, idx) => `
+          <div class="bg-slate-50 rounded-lg p-2.5 flex items-center justify-between text-xs">
+            <div><div class="font-semibold text-slate-900">${esc(r.name)}</div><div class="text-[11px] text-slate-500">Rem: ${r.remaining} • Avail: ${r.available} ${esc(r.unit)}</div></div>
+            <input data-mi-qty="${idx}" data-mat="${r.matId}" type="number" min="0" max="${r.issuable}" value="${r.issuable}" class="w-16 px-2 py-1 text-center bg-white border border-slate-200 rounded-lg font-bold text-[#1E3A8A]" />
+          </div>`).join('')}
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="review-mi" data-mr="${mr.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Review Material Issue</button>`)}
+  `;
+}
+
+// 37. CONFIRM MATERIAL ISSUE
+function renderConfirmMI() {
+  const mr = getMR(state.selected.mrId);
+  const d = state.miDraft || { mrId: mr.id, items: calcStockCheck(mr).rows.filter((r) => r.issuable > 0).map((r) => ({ matId: r.matId, name: r.name, unit: r.unit, issueQty: r.issuable })), isFull: !calcStockCheck(mr).anyShortage };
+  return `
+    ${renderTopBar('Confirm Material Issue', { back: true, fallback: 'create-mi' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(5, 'Confirming deducts stock from inventory and sends the Material Issue to Production.')}
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs space-y-1">
+        <div class="flex justify-between items-center"><strong class="text-[#1D4ED8]">${esc(mr.id)} • ${esc(mr.proId)}</strong>${badgeHTML(d.isFull ? 'Fully Issued' : 'Partially Issued')}</div>
+        <div class="text-slate-600">Type: <strong>${d.isFull ? 'Full Issue' : 'Partial Issue'}</strong></div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+        ${d.items.length ? d.items.map((i) => `<div class="flex justify-between py-1 border-b border-slate-100 last:border-0"><span>${esc(i.name)}</span><strong class="text-rose-600">-${i.issueQty} ${esc(i.unit)}</strong></div>`).join('') : '<div class="text-slate-400">No issuable stock available right now. Confirm GRN-001 first!</div>'}
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="confirm-mi-final" ${d.items.length ? '' : 'disabled'} class="w-full py-2.5 rounded-xl ${d.items.length ? 'bg-[#1E3A8A] text-white' : 'bg-slate-200 text-slate-400'} text-xs font-semibold">Confirm & Issue Materials</button>`)}
+  `;
+}
+
+// 38. MATERIAL ISSUE DETAILS
+function renderMIDetails() {
+  const mi = getMI(state.selected.miId);
+  return `
+    ${renderTopBar(mi.id, { back: true, fallback: 'mi-list' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      ${renderSCStepper(5, 'Material Issue sent to Production. Track Production receipt status below.')}
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1">
+        <div class="flex justify-between"><strong class="text-sm">${esc(mi.product)} (${esc(mi.proId)})</strong>${badgeHTML(mi.receiptStatus)}</div>
+        <div class="text-slate-500">Ref: ${esc(mi.mrId)} • ${esc(mi.issueType)} • By ${esc(mi.issuedBy)}</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500"><tr><th class="py-2 px-3">Material</th><th class="py-2 px-2 text-center">Issued</th><th class="py-2 px-3 text-right">Rec by Prod</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">${mi.items.map((i) => `<tr><td class="py-2 px-3 font-medium">${esc(i.name)}</td><td class="py-2 px-2 text-center font-semibold">${i.issued}</td><td class="py-2 px-3 text-right text-emerald-700 font-semibold">${i.received} ${esc(i.unit)}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="download-pdf" data-doc="${mi.id}_Note.pdf" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Download Note</button><button type="button" data-nav="material-return" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Record Return</button>`)}
+  `;
+}
+
+// 39. MATERIAL RETURN SCREEN
+function renderMaterialReturn() {
+  const mi = getMI(state.selected.miId);
+  return `
+    ${renderTopBar('Material Return', { back: true, fallback: 'mi-details' })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs"><strong>${esc(mi.proId)} • Ref ${esc(mi.id)}</strong><div class="text-slate-600">Only verified usable materials return to available inventory.</div></div>
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 text-xs">
+        <div><label class="block font-medium mb-1">Material</label><select id="retMat" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${mi.items.map((i) => `<option value="${i.matId}">${esc(i.name)} (Issued: ${i.issued})</option>`).join('')}</select></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-medium mb-1">Return Qty *</label><input id="retQty" type="number" min="1" value="1" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+          <div><label class="block font-medium mb-1">Condition *</label><select id="retCond" class="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option value="Usable">Usable (Add to Stock)</option><option value="Damaged">Damaged (Scrap Log)</option></select></div>
+        </div>
+        <div><label class="block font-medium mb-1">Reason *</label><input id="retReason" type="text" placeholder="Unused surplus from PRO-001" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div>
+      </div>
+    </div>
+    ${renderStickyAction(`<button type="button" data-action="save-return" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Confirm Return & Update Inventory</button>`)}
+  `;
+}
+
+// 40. PENDING MATERIAL SHORTAGE SCREEN
+function renderPendingShortage() {
+  const mr = getMR('MR-001');
+  const rows = calcStockCheck(mr).rows.filter((r) => r.shortage > 0);
+  return `
+    ${renderTopBar('Pending Shortages', { back: true, fallback: 'requests-hub' })}
+    <div class="phone-scroll p-3.5 space-y-2.5">
+      ${rows.length === 0 ? `<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center text-xs text-emerald-800 font-medium">All Production material shortages have been fulfilled!</div>` : rows.map((r) => `
+        <div class="bg-white border border-rose-200 rounded-xl p-3 space-y-2 text-xs">
+          <div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(r.name)}</strong>${badgeHTML('Purchase Required')}</div>
+          <div class="text-slate-600">PRO-001 • Rem: ${r.remaining} • Avail: ${r.available} • <strong class="text-rose-600">Shortage: ${r.shortage} ${esc(r.unit)}</strong></div>
+          <div class="grid grid-cols-2 gap-2 pt-1"><button type="button" data-nav="po-details" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-medium">View PO-001</button><button type="button" data-nav="create-pr" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Purchase Req</button></div>
+        </div>`).join('')}
+    </div>
+    ${renderBottomNav('requests')}
+  `;
+}
+
+// 41–43. HUB SCREENS
+function renderRequestsHub() {
+  return `${renderTopBar('Requests')}<div class="phone-scroll p-3.5 space-y-2.5">
+    ${[['Material Requests', 'From Production Department', state.materialRequests.length, 'mr-list', 'clipboard-list'], ['Material Issues', 'Issued to Production', state.materialIssues.length, 'mi-list', 'send'], ['Pending Shortages', 'Materials needing purchase', calcStockCheck(getMR('MR-001')).rows.filter((r) => r.shortage > 0).length, 'pending-shortage', 'alert-triangle']].map(([t, d, c, sc, ic]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between text-left hover:border-[#1D4ED8]"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold text-slate-900">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><div class="text-base font-bold text-[#1E3A8A]">${c}</div></button>`).join('')}
+  </div>${renderBottomNav('requests')}`;
+}
+
+function renderInventoryHub() {
+  const inS = state.materials.filter((m) => stockStatus(m) === 'In Stock').length;
+  const lowS = state.materials.filter((m) => stockStatus(m) === 'Low Stock').length;
+  const outS = state.materials.filter((m) => stockStatus(m) === 'Out of Stock').length;
+  return `${renderTopBar('Inventory')}<div class="phone-scroll p-3.5 space-y-3">
+    <div class="grid grid-cols-3 gap-2 text-center text-xs"><div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5"><div class="text-base font-bold text-emerald-700">${inS}</div><div class="text-[10px]">In Stock</div></div><div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5"><div class="text-base font-bold text-amber-700">${lowS}</div><div class="text-[10px]">Low Stock</div></div><div class="bg-rose-50 border border-rose-200 rounded-xl p-2.5"><div class="text-base font-bold text-rose-700">${outS}</div><div class="text-[10px]">Out of Stock</div></div></div>
+    ${[['Stock Availability', 'Live stock levels & alerts', 'inventory', 'boxes'], ['Materials Master', 'Shared raw material catalog', 'materials-list', 'layers'], ['Stock History', 'Inward (GRN) & Outward (Issue)', 'stock-history', 'history']].concat(currentUser().canAdjustStock ? [['Stock Adjustment', 'Authorized stock count correction', 'stock-adjustment', 'sliders']] : []).map(([t, d, sc, ic]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-left hover:border-[#1D4ED8]"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold text-slate-900">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}
+  </div>${renderBottomNav('inventory')}`;
+}
+
+function renderPurchaseHub() {
+  return `${renderTopBar('Purchase')}<div class="phone-scroll p-3.5 space-y-2.5">
+    ${[['Purchase Requirements', 'Shortages & stock replenishment', state.purchaseReqs.length, 'pr-list', 'file-warning'], ['Purchase Orders', 'Supplier purchase orders', state.purchaseOrders.length, 'po-list', 'shopping-cart'], ['Goods Receipt Notes (GRN)', 'Receive & inspect deliveries', state.grns.length, 'grn-list', 'package-plus'], ['Suppliers', 'Shared Supplier Master', state.suppliers.length, 'suppliers-list', 'building-2']].map(([t, d, c, sc, ic]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-left hover:border-[#1D4ED8]"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-5 h-5"></i></div><div><div class="text-sm font-semibold text-slate-900">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><div class="text-base font-bold text-[#1E3A8A]">${c}</div></button>`).join('')}
+  </div>${renderBottomNav('purchase')}`;
+}
+
+// 44–46. MORE, NOTIFICATIONS, PROFILE
+function renderMore() {
+  const u = currentUser();
+  return `${renderTopBar('More')}<div class="phone-scroll p-3.5 space-y-4">
+    <button type="button" data-nav="profile" class="w-full bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 text-left"><div class="w-10 h-10 rounded-full bg-[#1E3A8A] text-white font-bold text-sm flex items-center justify-center">${esc(u.name.split(' ').map((x) => x[0]).join(''))}</div><div class="flex-1"><div class="text-sm font-semibold">${esc(u.name)}</div><div class="text-xs text-slate-500">${esc(u.role)} • ${esc(u.department)}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>
+    <div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs font-medium">
+      ${[['Materials', 'materials-list'], ['Suppliers', 'suppliers-list'], ['Material Issues', 'mi-list'], ['Purchase Orders', 'po-list'], ['GRN', 'grn-list'], ['Stock History', 'stock-history'], ['Material Returns', 'material-return'], ['Notifications', 'notifications'], ['Profile', 'profile'], ['Common UI States (17)', 'ui-states']].map(([l, s]) => `<button type="button" data-nav="${s}" class="w-full px-3.5 py-2.5 flex justify-between text-slate-800 hover:bg-slate-50"><span>${l}</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></button>`).join('')}
+      <button type="button" data-action="logout" class="w-full px-3.5 py-2.5 flex justify-between text-rose-600"><span>Logout</span><i data-lucide="log-out" class="w-4 h-4"></i></button>
+    </div>
+  </div>${renderBottomNav('more')}`;
+}
+
+function renderNotifications() {
+  return `${renderTopBar('Notifications', { back: true, fallback: 'dashboard', right: `<button type="button" data-action="mark-all-read" class="text-xs font-semibold text-[#1D4ED8]">Mark All Read</button>` })}<div class="phone-scroll p-3.5 space-y-2">${state.notifications.map((n) => `<button type="button" data-action="open-notif" data-id="${n.id}" class="w-full text-left bg-white border ${n.unread ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200'} rounded-xl p-3 space-y-1"><div class="flex justify-between text-[10px]"><span class="font-semibold uppercase text-[#1D4ED8]">${esc(n.type)}</span><span class="text-slate-400">${esc(n.time)}</span></div><div class="text-xs font-semibold text-slate-900">${esc(n.title)}</div><div class="text-[11px] text-slate-600">${esc(n.desc)}</div></button>`).join('')}</div>`;
+}
+
+function renderProfile() {
+  const u = currentUser();
+  return `${renderTopBar('Profile', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-center"><div class="w-16 h-16 rounded-full bg-[#1E3A8A] text-white font-bold text-lg flex items-center justify-center mx-auto mb-2">${esc(u.name.split(' ').map((x) => x[0]).join(''))}</div><div class="text-base font-semibold">${esc(u.name)}</div><div class="text-xs text-[#1D4ED8] font-medium">${esc(u.role)}</div></div><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">${[['Employee ID', u.empId], ['Department', u.department], ['Role', u.role], ['Email', u.email], ['Phone', u.phone]].map(([k, v]) => `<div class="px-3.5 py-2.5 flex justify-between"><span class="text-slate-500">${k}</span><strong>${esc(v)}</strong></div>`).join('')}</div><button type="button" data-action="change-password" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">Change Password</button><button type="button" data-action="logout" class="w-full py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">Logout</button></div>`;
+}
+
+// 47. COMMON UI STATES (ALL 17 STATES)
+function renderUIStates() {
+  const states17 = [
+    ['no-mr', 'No Material Reqs', 'inbox', 'text-slate-300', 'No material requests', 'Requests from Production will appear here automatically.', 'Dashboard', 'dashboard'],
+    ['no-pr', 'No Purchase Reqs', 'shopping-cart', 'text-slate-300', 'No purchase requirements', 'All production material needs are covered by current stock.', 'View Inventory', 'inventory'],
+    ['full-stock', 'Full Stock', 'check-circle-2', 'text-emerald-500', 'Full Stock Available', 'All materials for MR-001 are ready to issue immediately.', 'Issue Materials', 'create-mi'],
+    ['partial-stock', 'Partial Stock', 'package-open', 'text-amber-500', 'Partial Stock Available', 'Compressor (2) & Steel Sheet (5) ready. 3 Sheets & 2 Controllers short.', 'Issue & Purchase', 'stock-check'],
+    ['no-stock', 'No Stock', 'x-circle', 'text-rose-500', 'No Stock Available', 'Temperature Controller has 0 available stock. Create a Purchase Requirement.', 'Create PR', 'create-pr'],
+    ['low-stock', 'Low Stock', 'alert-triangle', 'text-amber-500', 'Low Stock Warning', 'Steel Sheet (5) is below minimum threshold (6).', 'Replenish Stock', 'create-pr'],
+    ['purchase-pend', 'Purchase Pending', 'clock', 'text-blue-500', 'Purchase Order Pending', 'PO-001 sent to ABC Industrial Supplies. Delivery due Nov 20.', 'View PO-001', 'po-details'],
+    ['partial-del', 'Partial Delivery', 'truck', 'text-amber-500', 'Partial Delivery Received', '3 of 5 ordered items received. Remaining 2 pending delivery.', 'View GRN', 'grn-list'],
+    ['grn-done', 'GRN Completed', 'package-check', 'text-emerald-500', 'GRN-001 Completed', 'Accepted stock added to inventory and MR-001 refreshed.', 'Issue to Production', 'create-mi'],
+    ['mi-done', 'Materials Issued', 'send', 'text-emerald-500', 'Materials Issued Successfully', 'MI-001 deducted stock and notified Production.', 'View Issue Note', 'mi-details'],
+    ['await-prod', 'Awaiting Receipt', 'hourglass', 'text-amber-500', 'Awaiting Production Receipt', 'Production team has not yet confirmed receipt of MI-001.', 'View MI-001', 'mi-details'],
+    ['rec-done', 'Receipt Completed', 'check-check', 'text-emerald-600', 'Material Receipt Completed', 'Production confirmed receipt. PRO-001 is now Materials Ready.', 'Material Requests', 'mr-list'],
+    ['loading', 'Loading', '', '', '', '', '', ''],
+    ['success', 'Success', 'check-circle-2', 'text-emerald-500', 'PO-001 Sent to Supplier', 'Purchase Order PDF emailed to ABC Industrial Supplies.', 'Done', 'po-list'],
+    ['validation', 'Form Validation', 'alert-circle', 'text-rose-500', 'Quantity Validation Error', 'Issue quantity (6) cannot exceed available stock (5).', 'Fix Quantity', 'create-mi'],
+    ['network', 'Network Error', 'wifi-off', 'text-rose-400', 'Connection Lost', 'Unable to sync inventory. Check network and retry.', 'Retry Sync', 'dashboard'],
+    ['confirm', 'Confirm Dialog', 'help-circle', 'text-[#1E3A8A]', 'Confirm Stock Deduction?', 'Issuing MI-001 will deduct 2 Compressors & 5 Steel Sheets.', 'Confirm Issue', 'confirm-mi']
+  ];
+  const cur = states17.find((s) => s[0] === state.uiStateDemo) || states17[3];
+  const body = cur[0] === 'loading'
+    ? `<div class="space-y-2.5">${[1, 2, 3].map(() => `<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="h-3 w-24 skeleton"></div><div class="h-4 w-44 skeleton"></div><div class="h-3 w-full skeleton"></div></div>`).join('')}</div>`
+    : `<div class="bg-white border border-slate-200 rounded-xl p-6 text-center space-y-2"><i data-lucide="${cur[2]}" class="w-10 h-10 ${cur[3]} mx-auto"></i><div class="text-sm font-semibold text-slate-900">${cur[4]}</div><div class="text-xs text-slate-500">${cur[5]}</div><button type="button" data-nav="${cur[7]}" class="mt-2 px-4 py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">${cur[6]}</button></div>`;
+  return `${renderTopBar('Common UI States (17)', { back: true, fallback: 'more' })}<div class="bg-white border-b border-slate-200 px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${states17.map((s) => `<button type="button" data-action="set-ui-state" data-val="${s[0]}" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap border ${cur[0] === s[0] ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${s[1]}</button>`).join('')}</div><div class="phone-scroll p-3.5 flex flex-col justify-center">${body}</div>`;
+}
+
+/* ---------- BOTTOM SHEETS ---------- */
+function renderSheet() {
+  const root = document.getElementById('sheetRoot');
+  if (!state.activeSheet) { root.className = 'hidden'; root.innerHTML = ''; return; }
+  const s = state.activeSheet;
+  let title = '', content = '', footer = '';
+  if (s.type === 'add-sup') {
+    title = 'Add New Supplier';
+    content = `<div class="space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Supplier Name *</label><input id="shSupName" type="text" placeholder="e.g., Delta Cryo Spares" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Phone Number *</label><input id="shSupPhone" type="tel" placeholder="+91 98400 77889" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Contact Person</label><input id="shSupContact" type="text" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div>`;
+    footer = `<button type="button" data-action="close-sheet" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Cancel</button><button type="button" data-action="sheet-save-sup" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save & Select Supplier</button>`;
+  } else if (s.type === 'send-po') {
+    const po = getPO(s.poId || state.selected.poId);
+    const sup = getSup(po.supplierId);
+    title = 'Send Purchase Order';
+    content = `<div class="space-y-3 text-xs"><div class="bg-slate-50 rounded-xl p-3 space-y-1"><div class="font-semibold">${esc(sup.name)}</div><div class="text-slate-500">${esc(sup.email)} • ${esc(po.id)}.pdf</div></div><div class="grid grid-cols-3 gap-1.5 text-center"><span class="border border-[#1D4ED8] bg-blue-50 text-[#1E3A8A] rounded-lg py-2 font-medium">Email</span><span class="border border-slate-200 rounded-lg py-2">WhatsApp</span><span class="border border-slate-200 rounded-lg py-2">Mark Sent</span></div></div>`;
+    footer = `<button type="button" data-action="close-sheet" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold">Cancel</button><button type="button" data-action="confirm-send-po" data-id="${po.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Send Purchase Order</button>`;
+  }
+  root.className = 'sheet-backdrop';
+  root.innerHTML = `<div class="sheet-panel"><div class="px-4 py-3 border-b border-slate-200 flex justify-between items-center"><h2 class="text-sm font-semibold">${esc(title)}</h2><button type="button" data-action="close-sheet" class="p-1 text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="p-4 overflow-y-auto">${content}</div><div class="px-4 py-3 border-t border-slate-200 flex gap-2 bg-white">${footer}</div></div>`;
+  lucide.createIcons({ nodes: [root] });
+}
+
+/* ---------- ROUTER, SIDEBAR, GALLERY, WORKFLOW ---------- */
+function renderScreenMarkup(id) {
+  const map = {
+    'dashboard': renderDashboard, 'mr-list': renderMRList, 'mr-details': renderMRDetails, 'stock-check': renderStockCheck,
+    'materials-list': renderMaterialsList, 'add-material': () => renderMaterialForm(false), 'material-details': renderMaterialDetails,
+    'edit-material': () => renderMaterialForm(true), 'material-approval': renderMaterialApproval, 'inventory': renderInventory,
+    'inventory-details': renderInventoryDetails, 'stock-history': renderStockHistory, 'stock-adjustment': renderStockAdjustment,
+    'suppliers-list': renderSuppliersList, 'add-supplier': () => renderSupplierForm(false), 'supplier-details': renderSupplierDetails,
+    'edit-supplier': () => renderSupplierForm(true), 'pr-list': renderPRList, 'create-pr': renderCreatePR, 'pr-details': renderPRDetails,
+    'po-list': renderPOList, 'create-po': () => renderPOForm(false), 'po-preview': renderPOPreview, 'send-po-sheet': renderPOPreview,
+    'po-details': renderPODetails, 'edit-po': () => renderPOForm(true), 'grn-list': renderGRNList, 'create-grn': renderCreateGRN,
+    'confirm-grn': renderConfirmGRN, 'grn-details': renderGRNDetails, 'mi-list': renderMIList, 'create-mi': renderCreateMI,
+    'confirm-mi': renderConfirmMI, 'mi-details': renderMIDetails, 'material-return': renderMaterialReturn, 'pending-shortage': renderPendingShortage,
+    'requests-hub': renderRequestsHub, 'inventory-hub': renderInventoryHub, 'purchase-hub': renderPurchaseHub,
+    'more': renderMore, 'notifications': renderNotifications, 'profile': renderProfile, 'ui-states': renderUIStates
+  };
+  return (map[id] || renderDashboard)();
+}
+
+function renderSidebar() {
+  document.getElementById('sbModeFlowBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'flow' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sbModeAllBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'all' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sidebarSearchWrap').classList.toggle('hidden', state.sidebarMode !== 'all');
+  const container = document.getElementById('sidebarList');
+
+  if (state.sidebarMode === 'flow') {
+    const steps = [
+      ['★', 'Supply Chain Dashboard', 'Pending MRs, low stock & quick actions', 'dashboard', ['dashboard', 'requests-hub', 'inventory-hub', 'purchase-hub', 'more', 'notifications', 'profile']],
+      ['1', 'Material Request (MR-001)', 'Receive PRO-001 Deep Freezer request', 'mr-details', ['mr-list', 'mr-details']],
+      ['2', 'Check Stock Availability', 'See Compressor (2), Steel (5), Controller (0)', 'stock-check', ['stock-check', 'pending-shortage']],
+      ['3', 'Issue Available Stock', 'Issue MI-001 & deduct inventory', 'create-mi', ['mi-list', 'create-mi', 'confirm-mi', 'mi-details', 'material-return']],
+      ['4', 'Purchase Shortage (PO-001)', 'PR-001 → Select ABC Industrial → PO-001', 'po-details', ['pr-list', 'create-pr', 'pr-details', 'po-list', 'create-po', 'po-preview', 'send-po-sheet', 'po-details', 'edit-po']],
+      ['5', 'Receive Goods (GRN-001)', 'Confirm GRN & auto-increase inventory', 'confirm-grn', ['grn-list', 'create-grn', 'confirm-grn', 'grn-details']],
+      ['6', 'Inventory & Masters', 'Materials, Stock History & Suppliers', 'inventory', ['inventory', 'inventory-details', 'stock-history', 'stock-adjustment', 'materials-list', 'add-material', 'material-details', 'edit-material', 'material-approval', 'suppliers-list', 'add-supplier', 'supplier-details', 'edit-supplier']]
+    ];
+    container.innerHTML = `<div class="px-1.5 pt-1 pb-2"><div class="text-xs font-semibold text-slate-900">Simple Supply Chain Flow</div><div class="text-[11px] text-slate-500 mt-0.5">Tap any step to try it live in the phone.</div></div><div class="space-y-1.5 px-1">${steps.map(([n, t, d, sc, grp]) => {
+      const act = state.viewMode === 'phone' && grp.includes(state.screen);
+      return `<button type="button" data-sidebar-screen="${sc}" class="w-full p-2.5 rounded-xl text-left border transition flex items-start gap-2.5 ${act ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-800 border-slate-200 hover:border-[#1D4ED8]'}"><span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 ${act ? 'bg-white text-[#1E3A8A]' : 'bg-blue-50 text-[#1E3A8A]'}">${n}</span><div><div class="text-xs font-semibold leading-tight">${t}</div><div class="text-[11px] mt-0.5 ${act ? 'text-blue-100' : 'text-slate-500'}">${d}</div></div></button>`;
+    }).join('')}</div><div class="px-1 pt-2 border-t border-slate-200"><button type="button" data-sidebar-screen="ui-states" class="w-full px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 text-left">Common UI States (17)</button></div>`;
+    return;
+  }
+
+  const sv = (document.getElementById('sidebarSearch')?.value || '').trim().toLowerCase();
+  container.innerHTML = SCREEN_CATALOG.map((grp) => {
+    const items = grp.items.filter((i) => !sv || `${i.num} ${i.title} ${grp.group}`.toLowerCase().includes(sv));
+    if (!items.length) return '';
+    return `<div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1">${esc(grp.group)}</div><div class="space-y-0.5">${items.map((it) => `<button type="button" data-sidebar-screen="${it.id}" class="w-full px-2.5 py-1.5 rounded-lg text-left text-xs ${state.screen === it.id && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white font-semibold' : 'text-slate-700 hover:bg-slate-100'}"><span class="opacity-60 mr-1.5">${it.num}.</span>${esc(it.title)}</button>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function renderGallery() {
+  const c = document.getElementById('galleryContainer');
+  const all = SCREEN_CATALOG.flatMap((g) => g.items.map((i) => ({ ...i, group: g.group })));
+  const groups = ['All', ...SCREEN_CATALOG.map((g) => g.group)];
+  const shown = state.galleryCategory === 'All' ? all : all.filter((i) => i.group === state.galleryCategory);
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h2 class="text-base font-bold">All 43 Supply Chain Screens</h2><p class="text-xs text-slate-500">Click any screen card to open and interact with it.</p></div><div class="flex gap-1.5 overflow-x-auto no-scrollbar">${groups.map((g) => `<button type="button" data-gallery-cat="${esc(g)}" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border ${state.galleryCategory === g ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${esc(g)}</button>`).join('')}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">${shown.map((it) => `<div data-gallery-open="${it.id}" class="bg-white border border-slate-200 rounded-2xl p-3 cursor-pointer hover:border-[#1D4ED8] hover:shadow-md transition flex flex-col"><div class="text-xs font-semibold mb-2 truncate"><span class="text-[#1D4ED8] mr-1">#${it.num}</span>${esc(it.title)}</div><div class="gallery-mini-phone pointer-events-none select-none"><div class="origin-top-left w-[360px] h-[640px] scale-[0.65] flex flex-col bg-[#F8FAFC]">${renderScreenMarkup(it.id)}</div></div></div>`).join('')}</div>`;
+  lucide.createIcons({ nodes: [c] });
+}
+
+function renderWorkflowMap() {
+  const c = document.getElementById('workflowContainer');
+  const stages = [
+    ['1', 'Material Request (MR-001)', 'Production requests Compressor (2), Steel Sheet (8), Controller (2) for PRO-001', 'mr-details'],
+    ['2', 'Stock Availability Check', 'Compares live inventory: Full / Partial / No Stock Available', 'stock-check'],
+    ['3', 'First Issue (MI-001)', 'Issue available Compressor (2) & Steel Sheet (5); deduct stock', 'create-mi'],
+    ['4', 'Purchase Req (PR-001)', 'Auto-calculates shortage: Steel Sheet (3), Controller (2)', 'pr-details'],
+    ['5', 'Purchase Order (PO-001)', 'Select ABC Industrial Supplies, preview & send PO', 'po-details'],
+    ['6', 'Goods Receipt (GRN-001)', 'Confirm accepted stock → auto-increases inventory', 'confirm-grn'],
+    ['7', 'Second Issue (MI-002)', 'Issue remaining Steel Sheet (3) & Controller (2) to Production', 'create-mi'],
+    ['8', 'Completed & Synced', 'Production confirms receipt → MR-001 Completed & PRO-001 Materials Ready', 'mi-details']
+  ];
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4"><div><h2 class="text-base font-bold">Cryo ERP – Supply Chain Workflow (Scenarios A, B & C)</h2><p class="text-xs text-slate-500">Click any stage to open its live mobile screen.</p></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">${stages.map(([n, t, d, sc]) => `<button type="button" data-gallery-open="${sc}" class="text-left bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3.5 space-y-1.5"><span class="w-6 h-6 rounded-full bg-[#1E3A8A] text-white text-xs font-bold flex items-center justify-center">${n}</span><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-600">${d}</div></button>`).join('')}</div></div>`;
+}
+
+function renderAll() {
+  ['Phone', 'Gallery', 'Flow'].forEach((m) => {
+    const key = m.toLowerCase() === 'flow' ? 'workflow' : m.toLowerCase();
+    document.getElementById(`mode${m}Btn`).className = `px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${state.viewMode === key ? 'bg-[#1E3A8A] text-white shadow-sm' : 'text-slate-600'}`;
+  });
+  document.getElementById('phoneContainer').classList.toggle('hidden', state.viewMode !== 'phone');
+  document.getElementById('galleryContainer').classList.toggle('hidden', state.viewMode !== 'gallery');
+  document.getElementById('workflowContainer').classList.toggle('hidden', state.viewMode !== 'workflow');
+  renderSidebar();
+  if (state.viewMode === 'phone') {
+    const root = document.getElementById('screenRoot');
+    root.innerHTML = renderScreenMarkup(state.screen);
+    lucide.createIcons({ nodes: [root] });
+    renderSheet();
+    const meta = SCREEN_CATALOG.flatMap((g) => g.items).find((i) => i.id === state.screen);
+    const metaEl = document.getElementById('screenFooterMeta');
+    if (meta && metaEl) metaEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-[#1E3A8A]">Screen #${meta.num}</span><span>${esc(meta.title)}</span><span>•</span><span><strong>${esc(currentUser().role)}</strong></span>`;
+  } else if (state.viewMode === 'gallery') renderGallery();
+  else renderWorkflowMap();
+}
+
+/* ---------- EVENTS ---------- */
+document.getElementById('roleSelect').addEventListener('change', (e) => { state.role = e.target.value; renderAll(); showToast(`Role: ${currentUser().role}`); });
+document.getElementById('modePhoneBtn').addEventListener('click', () => { state.viewMode = 'phone'; renderAll(); });
+document.getElementById('modeGalleryBtn').addEventListener('click', () => { state.viewMode = 'gallery'; renderAll(); });
+document.getElementById('modeFlowBtn').addEventListener('click', () => { state.viewMode = 'workflow'; renderAll(); });
+document.getElementById('sbModeFlowBtn').addEventListener('click', () => { state.sidebarMode = 'flow'; renderSidebar(); });
+document.getElementById('sbModeAllBtn').addEventListener('click', () => { state.sidebarMode = 'all'; renderSidebar(); });
+document.getElementById('sidebarSearch').addEventListener('input', () => renderSidebar());
+
+const sidebarEl = document.getElementById('screenSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+document.getElementById('toggleSidebarBtn').addEventListener('click', () => { sidebarEl.classList.toggle('-translate-x-full'); sidebarOverlay.classList.toggle('hidden'); });
+sidebarOverlay.addEventListener('click', () => { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); });
+
+document.addEventListener('input', (e) => {
+  const f = e.target.dataset.filter;
+  if (f) { state.filters[f] = e.target.value; const p = e.target.selectionStart; renderAll(); const el = document.querySelector(`[data-filter="${f}"]`); if (el) { el.focus(); el.setSelectionRange(p, p); } return; }
+  if (e.target.dataset.poQty !== undefined && state.poDraft) { state.poDraft.items[Number(e.target.dataset.poQty)].qty = Math.max(1, Number(e.target.value) || 1); renderAll(); }
+  if (e.target.dataset.poPrice !== undefined && state.poDraft) { state.poDraft.items[Number(e.target.dataset.poPrice)].unitPrice = Math.max(0, Number(e.target.value) || 0); renderAll(); }
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'poSupSelect' && state.poDraft) { state.poDraft.supplierId = e.target.value; renderAll(); }
+});
+
+document.addEventListener('click', (e) => {
+  const sb = e.target.closest('[data-sidebar-screen]');
+  if (sb) { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); navigate(sb.dataset.sidebarScreen); return; }
+  const gc = e.target.closest('[data-gallery-cat]');
+  if (gc) { state.galleryCategory = gc.dataset.galleryCat; renderGallery(); return; }
+  const go = e.target.closest('[data-gallery-open]');
+  if (go) { navigate(go.dataset.galleryOpen); return; }
+  const nav = e.target.closest('[data-nav]');
+  if (nav) { navigate(nav.dataset.nav); return; }
+  const opn = e.target.closest('[data-open]');
+  if (opn) { navigate(opn.dataset.open, { key: opn.dataset.key, val: opn.dataset.val }); return; }
+  const ft = e.target.closest('[data-filter-tab]');
+  if (ft) { state.filters[ft.dataset.filterTab] = ft.dataset.val; renderAll(); return; }
+
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const act = btn.dataset.action;
+
+  if (act === 'go-back') goBack(btn.dataset.fallback || 'dashboard');
+  else if (act === 'close-sheet') { state.activeSheet = null; renderSheet(); }
+  else if (act === 'open-sheet') { state.activeSheet = { type: btn.dataset.sheet }; renderSheet(); }
+  else if (act === 'call') showToast(`Calling ${btn.dataset.name} (${btn.dataset.phone})...`);
+  else if (act === 'download-pdf') showToast(`Downloaded ${btn.dataset.doc}`);
+  else if (act === 'save-mat') {
+    const name = (document.getElementById('matName')?.value || '').trim();
+    if (!name) { showToast('Material name required', 'error'); return; }
+    if (btn.dataset.mode === 'edit') {
+      Object.assign(getMat(state.selected.matId), { name, unit: document.getElementById('matUnit')?.value, minStock: Number(document.getElementById('matMin')?.value) || 0, category: document.getElementById('matCat')?.value, spec: document.getElementById('matSpec')?.value });
+      navigate('material-details'); showToast('Material updated');
+    } else {
+      const code = `RM-${101 + state.materials.length}`;
+      state.materials.unshift({ id: `MAT-0${state.materials.length + 1}`, code, name, unit: document.getElementById('matUnit')?.value || 'Pieces', category: document.getElementById('matCat')?.value || 'General', spec: document.getElementById('matSpec')?.value || '', physical: 0, reserved: 0, minStock: Number(document.getElementById('matMin')?.value) || 0, supplierId: 'SUP-01', active: true });
+      navigate('materials-list'); showToast(`${name} (${code}) added to Material Master`);
+    }
+  } else if (act === 'approve-nma') {
+    const idx = state.pendingMaterialApprovals.findIndex((a) => a.id === btn.dataset.id);
+    if (idx >= 0) {
+      const a = state.pendingMaterialApprovals.splice(idx, 1)[0];
+      state.materials.unshift({ id: `MAT-0${state.materials.length + 1}`, code: `RM-${101 + state.materials.length}`, name: a.name, unit: a.unit, category: 'Cryo Parts', spec: a.spec, physical: 0, reserved: 0, minStock: 5, supplierId: 'SUP-01', active: true });
+      renderAll(); showToast(`${a.name} approved & added to Material Master`);
+    }
+  } else if (act === 'reject-nma') {
+    state.pendingMaterialApprovals = state.pendingMaterialApprovals.filter((a) => a.id !== btn.dataset.id);
+    renderAll(); showToast('Material request rejected');
+  } else if (act === 'confirm-adj') {
+    const mat = getMat(document.getElementById('adjMat')?.value);
+    const dir = document.getElementById('adjType')?.value;
+    const qty = Number(document.getElementById('adjQty')?.value) || 0;
+    const reason = (document.getElementById('adjReason')?.value || '').trim();
+    if (!reason || qty <= 0) { showToast('Enter valid quantity & reason', 'error'); return; }
+    if (dir === 'out' && mat.physical < qty) { showToast('Negative inventory is not allowed', 'error'); return; }
+    mat.physical += dir === 'in' ? qty : -qty;
+    state.stockHistory.unshift({ id: `TX-${105 + state.stockHistory.length}`, matId: mat.id, name: mat.name, ref: 'ADJ', date: todayStr(), qty, balance: mat.physical, type: 'Adjustment', dir });
+    navigate('inventory-details', { key: 'matId', val: mat.id }); showToast('Stock adjusted');
+  } else if (act === 'save-sup' || act === 'sheet-save-sup') {
+    const isSheet = act === 'sheet-save-sup';
+    const name = (document.getElementById(isSheet ? 'shSupName' : 'supName')?.value || '').trim();
+    const phone = (document.getElementById(isSheet ? 'shSupPhone' : 'supPhone')?.value || '').trim();
+    if (!name || !phone) { showToast('Supplier name & phone required', 'error'); return; }
+    if (!isSheet && btn.dataset.mode === 'edit') {
+      Object.assign(getSup(state.selected.supId), { name, phone, contact: document.getElementById('supContact')?.value || '', email: document.getElementById('supEmail')?.value || '', gstin: document.getElementById('supGstin')?.value || '', address: document.getElementById('supAddress')?.value || '' });
+      navigate('supplier-details'); showToast('Supplier updated');
+    } else {
+      const newS = { id: `SUP-0${state.suppliers.length + 1}`, name, phone, contact: document.getElementById(isSheet ? 'shSupContact' : 'supContact')?.value || '', email: document.getElementById('supEmail')?.value || '', gstin: document.getElementById('supGstin')?.value || '', address: document.getElementById('supAddress')?.value || '', materials: [] };
+      state.suppliers.unshift(newS);
+      if (isSheet && state.poDraft) { state.poDraft.supplierId = newS.id; state.activeSheet = null; renderAll(); showToast(`${name} added & selected`); }
+      else { navigate('suppliers-list'); showToast(`${name} added to Supplier Master`); }
+    }
+  } else if (act === 'save-pr') {
+    const newId = `PR-00${state.purchaseReqs.length + 1}`;
+    const mr = getMR(state.selected.mrId);
+    const shortItems = calcStockCheck(mr).rows.filter((r) => r.shortage > 0);
+    state.purchaseReqs.unshift({ id: newId, mrId: mr.id, proId: mr.proId, requiredDate: document.getElementById('prReqDate')?.value || todayStr(), status: 'Pending', notes: document.getElementById('prNotes')?.value || '', items: (shortItems.length ? shortItems : [{ matId: 'MAT-02', name: 'Steel Sheet', unit: 'Sheets', shortage: 3 }]).map((s) => ({ matId: s.matId, name: s.name, unit: s.unit, required: s.shortage, ordered: 0, received: 0 })) });
+    navigate('pr-details', { key: 'prId', val: newId }); showToast(`${newId} created`);
+  } else if (act === 'save-po') {
+    const d = state.poDraft;
+    if (d.mode === 'edit') {
+      const po = getPO(d.id); po.supplierId = d.supplierId; po.items = d.items.map((i) => ({ ...i, received: i.received || 0 }));
+      navigate(btn.dataset.mode === 'preview' ? 'po-preview' : 'po-details'); showToast(`${po.id} updated`);
+    } else {
+      const newId = `PO-00${state.purchaseOrders.length + 1}`;
+      state.purchaseOrders.unshift({ id: newId, prId: d.prId, mrId: d.mrId, supplierId: d.supplierId, date: todayStr(), expectedDelivery: d.delivery, status: 'Draft', discount: d.discount, taxPct: d.taxPct, paymentTerms: d.terms, notes: d.notes, items: d.items.map((i) => ({ ...i, received: 0 })) });
+      state.selected.poId = newId;
+      navigate(btn.dataset.mode === 'preview' ? 'po-preview' : 'po-details'); showToast(`${newId} created`);
+    }
+  } else if (act === 'confirm-send-po') {
+    const po = getPO(btn.dataset.id); po.status = 'Sent'; state.activeSheet = null;
+    navigate('po-details', { key: 'poId', val: po.id }); showToast(`${po.id} sent to supplier`);
+  } else if (act === 'review-grn') {
+    const po = getPO(btn.dataset.po);
+    const items = po.items.map((it, idx) => ({ matId: it.matId, name: it.name, unit: it.unit, ordered: it.qty, received: Number(document.querySelector(`[data-grn-rec="${idx}"]`)?.value) || 0, accepted: Number(document.querySelector(`[data-grn-acc="${idx}"]`)?.value) || 0, rejected: Number(document.querySelector(`[data-grn-rej="${idx}"]`)?.value) || 0 }));
+    const newId = `GRN-00${state.grns.length + 1}`;
+    state.grns.unshift({ id: newId, poId: po.id, mrId: po.mrId, supplierId: po.supplierId, date: todayStr(), receivedBy: currentUser().name, invoiceRef: document.getElementById('grnInv')?.value || '', status: 'Draft', confirmed: false, remarks: document.getElementById('grnRem')?.value || '', items });
+    navigate('confirm-grn', { key: 'grnId', val: newId });
+  } else if (act === 'confirm-grn-final') {
+    const g = getGRN(btn.dataset.id);
+    if (g.confirmed) { showToast('GRN already confirmed', 'warning'); return; }
+    g.confirmed = true; g.status = 'Full Receipt';
+    g.items.forEach((it) => {
+      const m = getMat(it.matId); m.physical += it.accepted;
+      state.stockHistory.unshift({ id: `TX-${105 + state.stockHistory.length}`, matId: m.id, name: m.name, ref: g.id, date: todayStr(), qty: it.accepted, balance: m.physical, type: 'GRN', dir: 'in' });
+    });
+    const po = getPO(g.poId); po.status = 'Fully Received'; po.items.forEach((pi, idx) => { if (g.items[idx]) pi.received += g.items[idx].accepted; });
+    navigate('grn-details', { key: 'grnId', val: g.id });
+    showToast(`${g.id} confirmed — Inventory updated & MR-001 refreshed!`);
+  } else if (act === 'review-mi') {
+    const mr = getMR(btn.dataset.mr);
+    const items = [];
+    document.querySelectorAll('[data-mi-qty]').forEach((el) => {
+      const q = Number(el.value) || 0;
+      if (q > 0) { const m = getMat(el.dataset.mat); items.push({ matId: m.id, name: m.name, unit: m.unit, issueQty: q }); }
+    });
+    const totalRem = mr.items.reduce((a, i) => a + Math.max(0, i.requested - i.issued), 0);
+    const totalIss = items.reduce((a, i) => a + i.issueQty, 0);
+    state.miDraft = { mrId: mr.id, items, isFull: totalIss >= totalRem };
+    navigate('confirm-mi');
+  } else if (act === 'confirm-mi-final') {
+    const mr = getMR(state.selected.mrId);
+    const d = state.miDraft || { items: calcStockCheck(mr).rows.filter((r) => r.issuable > 0).map((r) => ({ matId: r.matId, name: r.name, unit: r.unit, issueQty: r.issuable })), isFull: !calcStockCheck(mr).anyShortage };
+    const newId = `MI-00${state.materialIssues.length + 1}`;
+    d.items.forEach((it) => {
+      const m = getMat(it.matId); m.physical = Math.max(0, m.physical - it.issueQty);
+      const mrIt = mr.items.find((x) => x.matId === it.matId); if (mrIt) mrIt.issued += it.issueQty;
+      state.stockHistory.unshift({ id: `TX-${105 + state.stockHistory.length}`, matId: m.id, name: m.name, ref: newId, date: todayStr(), qty: it.issueQty, balance: m.physical, type: 'Material Issue', dir: 'out' });
+    });
+    const allDone = mr.items.every((i) => i.issued >= i.requested);
+    mr.status = allDone ? 'Fully Issued' : 'Partially Issued';
+    state.materialIssues.unshift({ id: newId, mrId: mr.id, proId: mr.proId, product: mr.product, date: todayStr(), issuedBy: currentUser().name, issueType: allDone ? 'Full Issue' : 'Partial Issue', receiptStatus: 'Awaiting Receipt', remarks: '', items: d.items.map((i) => ({ matId: i.matId, name: i.name, unit: i.unit, issued: i.issueQty, received: 0 })) });
+    state.miDraft = null;
+    navigate('mi-details', { key: 'miId', val: newId });
+    showToast(`${newId} issued — Stock deducted & sent to Production!`);
+  } else if (act === 'save-return') {
+    const m = getMat(document.getElementById('retMat')?.value);
+    const qty = Number(document.getElementById('retQty')?.value) || 0;
+    const cond = document.getElementById('retCond')?.value;
+    if (qty <= 0) { showToast('Enter valid return qty', 'error'); return; }
+    if (cond === 'Usable') {
+      m.physical += qty;
+      state.stockHistory.unshift({ id: `TX-${105 + state.stockHistory.length}`, matId: m.id, name: m.name, ref: 'RET', date: todayStr(), qty, balance: m.physical, type: 'Material Return', dir: 'in' });
+    }
+    navigate('inventory-details', { key: 'matId', val: m.id });
+    showToast(cond === 'Usable' ? `Returned ${qty} ${m.name} to usable stock` : `Recorded ${qty} damaged ${m.name} separately`);
+  } else if (act === 'open-notif') {
+    const n = state.notifications.find((x) => x.id === btn.dataset.id);
+    if (n) { n.unread = false; navigate(n.screen, n.key ? { key: n.key, val: n.val } : {}); }
+  } else if (act === 'mark-all-read') { state.notifications.forEach((n) => { n.unread = false; }); renderAll(); showToast('All notifications marked as read'); }
+  else if (act === 'set-ui-state') { state.uiStateDemo = btn.dataset.val; renderAll(); }
+  else if (act === 'change-password') showToast(`Password reset sent to ${currentUser().email}`);
+  else if (act === 'logout') showToast('Signed out of Cryo ERP Supply Chain');
+});
+
+renderAll();
+</script>
+</body>
+</html>

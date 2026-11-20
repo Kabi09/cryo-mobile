@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cryo ERP – Centralized Admin & Management Mobile App</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --navy:#1E3A8A; --royal:#1D4ED8; --bg:#F8FAFC; --card:#FFFFFF; --border:#E2E8F0; --text:#0F172A; }
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; background: #EEF2F6; color: var(--text); overflow-x: hidden; }
+    .phone-shell {
+      width: 390px; max-width: 100%; height: 820px; max-height: calc(100vh - 76px);
+      background: var(--bg); border-radius: 36px; border: 8px solid #0F172A;
+      box-shadow: 0 24px 60px -15px rgba(15, 23, 42, 0.28);
+      display: flex; flex-direction: column; overflow: hidden; position: relative;
+    }
+    @media (max-width: 520px) {
+      .phone-shell { width: 100%; height: calc(100vh - 56px); max-height: none; border-radius: 0; border: none; box-shadow: none; }
+    }
+    .phone-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .phone-scroll::-webkit-scrollbar { width: 4px; }
+    .phone-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    .sidebar-scroll::-webkit-scrollbar { width: 5px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulseBg { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+    .skeleton { animation: pulseBg 1.4s ease-in-out infinite; background: #E2E8F0; border-radius: 6px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .toast-bar { position: absolute; top: 46px; left: 14px; right: 14px; z-index: 60; animation: fadeIn 0.16s ease-out; }
+    .gallery-mini-phone { width: 100%; aspect-ratio: 9 / 16; max-height: 360px; background: #F8FAFC; border: 3px solid #1E293B; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .gallery-mini-phone:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -8px rgba(30, 58, 138, 0.2); border-color: #1D4ED8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Toolbar -->
+  <header class="bg-white border-b border-slate-200 px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sticky top-0 z-50">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button id="toggleSidebarBtn" type="button" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100" aria-label="Toggle menu">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm shrink-0">C</div>
+      <div class="min-w-0">
+        <div class="font-semibold text-sm text-slate-900 truncate">Cryo ERP – Centralized Admin</div>
+        <div class="text-[11px] text-slate-500 truncate hidden sm:block">All 5 Departments Unified • 47 Mobile Screens</div>
+      </div>
+    </div>
+
+    <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+      <button id="modePhoneBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">App</span></button>
+      <button id="modeGalleryBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">All 47</span></button>
+      <button id="modeFlowBtn" type="button" class="px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1"><i data-lucide="git-branch" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">ERP Map</span></button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex relative overflow-hidden">
+    <!-- Left Guided Flow / All 47 Screens Sidebar -->
+    <aside id="screenSidebar" class="fixed lg:static inset-y-14 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="p-3 border-b border-slate-200 space-y-2.5">
+        <div class="grid grid-cols-2 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+          <button id="sbModeFlowBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">Simple Guide</button>
+          <button id="sbModeAllBtn" type="button" class="py-1.5 text-xs font-semibold rounded-md transition">All 47 Screens</button>
+        </div>
+        <div id="sidebarSearchWrap" class="relative hidden">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5"></i>
+          <input id="sidebarSearch" type="text" placeholder="Find any of 47 screens..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#1D4ED8]" />
+        </div>
+      </div>
+      <div id="sidebarList" class="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-3"></div>
+    </aside>
+    <div id="sidebarOverlay" class="fixed inset-0 top-14 bg-slate-900/30 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Canvas -->
+    <main class="flex-1 overflow-y-auto flex items-start justify-center p-0 sm:p-4 lg:p-5">
+      <div id="phoneContainer" class="flex flex-col items-center w-full">
+        <div class="phone-shell">
+          <div class="h-7 px-5 bg-white flex items-center justify-between text-[11px] font-semibold text-slate-800 shrink-0 select-none border-b border-slate-100">
+            <span>13:35</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full hidden sm:block"></div>
+            <div class="flex items-center gap-1.5 text-slate-700"><i data-lucide="signal" class="w-3 h-3"></i><i data-lucide="wifi" class="w-3 h-3"></i><i data-lucide="battery-full" class="w-3.5 h-3.5"></i></div>
+          </div>
+          <div id="phoneToast" class="toast-bar hidden"></div>
+          <div id="screenRoot" class="flex-1 flex flex-col min-h-0 relative"></div>
+        </div>
+        <div id="screenFooterMeta" class="hidden sm:flex items-center gap-2 mt-2.5 text-xs text-slate-500"></div>
+      </div>
+
+      <div id="galleryContainer" class="hidden w-full max-w-7xl mx-auto pb-8"></div>
+      <div id="workflowContainer" class="hidden w-full max-w-5xl mx-auto pb-8"></div>
+    </main>
+  </div>
+
+<script>
+/* ==========================================================================
+   CRYO ERP – CENTRALIZED ADMIN & MANAGEMENT MOBILE APP
+   Complete 47-Screen Unified Prototype (Sections 5–51)
+   One ERP, One Shared Database, One Source of Truth
+   ========================================================================== */
+
+const SCREEN_CATALOG = [
+  { group: 'Core & Navigation', items: [
+    { id: 'admin-login', num: 5, title: 'Admin Login' },
+    { id: 'dashboard', num: 6, title: 'Centralized Admin Dashboard' },
+    { id: 'departments-overview', num: 7, title: 'Departments Overview' },
+    { id: 'dept-switcher', num: 8, title: 'Department Switcher' },
+    { id: 'global-search', num: 14, title: 'Global Search' },
+    { id: 'more', num: 48, title: 'More Menu' },
+    { id: 'profile', num: 49, title: 'Admin Profile' },
+    { id: 'change-password', num: 50, title: 'Change Password' }
+  ]},
+  { group: '5 Full-Access Department Workspaces', items: [
+    { id: 'ws-sales', num: 9, title: 'Sales Workspace (Full Access)' },
+    { id: 'ws-production', num: 10, title: 'Production Workspace (Full Access)' },
+    { id: 'ws-supply-chain', num: 11, title: 'Supply Chain Workspace (Full Access)' },
+    { id: 'ws-logistics', num: 12, title: 'Logistics Workspace (Full Access)' },
+    { id: 'ws-employees', num: 13, title: 'Employee & Access Workspace' }
+  ]},
+  { group: 'Centralized Orders & Approvals', items: [
+    { id: 'all-orders', num: 15, title: 'All Orders List' },
+    { id: 'order-journey', num: 16, title: 'Complete Order Journey (22 Steps)' },
+    { id: 'manage-order', num: 17, title: 'Manage Order Action Hub' },
+    { id: 'order-hold-cancel', num: 18, title: 'Order Hold & Cancellation' },
+    { id: 'pending-actions', num: 19, title: 'Pending Actions Queue' },
+    { id: 'approvals', num: 20, title: 'Approvals Queue' },
+    { id: 'approval-details', num: 21, title: 'Approval Details' }
+  ]},
+  { group: 'Shared Master Data', items: [
+    { id: 'master-data', num: 22, title: 'Centralized Master Data' },
+    { id: 'customers-admin', num: 23, title: 'Customers – Admin Overview' },
+    { id: 'products-admin', num: 24, title: 'Products – Admin Overview' }
+  ]},
+  { group: 'Payments & Expenses', items: [
+    { id: 'payments-dashboard', num: 25, title: 'Payments & Expenses Dashboard' },
+    { id: 'customer-payments', num: 26, title: 'Customer Payments List' },
+    { id: 'outstanding-payments', num: 27, title: 'Outstanding Payments' },
+    { id: 'record-cust-payment', num: 28, title: 'Record Customer Payment' },
+    { id: 'supplier-payments', num: 29, title: 'Supplier Payments' },
+    { id: 'record-sup-payment', num: 30, title: 'Record Supplier Payment' },
+    { id: 'delivery-expenses', num: 31, title: 'Delivery Expenses' }
+  ]},
+  { group: 'Centralized Reports (7 Modules)', items: [
+    { id: 'reports-dashboard', num: 32, title: 'Reports Dashboard' },
+    { id: 'report-sales', num: 33, title: 'Sales Reports' },
+    { id: 'report-production', num: 34, title: 'Production Reports' },
+    { id: 'report-inventory', num: 35, title: 'Inventory Reports' },
+    { id: 'report-purchase', num: 36, title: 'Purchase Reports' },
+    { id: 'report-logistics', num: 37, title: 'Logistics Reports' },
+    { id: 'report-payment', num: 38, title: 'Payment Reports' },
+    { id: 'report-order-status', num: 39, title: 'Order Status Reports' }
+  ]},
+  { group: 'System, Docs, Audit & Settings', items: [
+    { id: 'notifications', num: 40, title: 'Centralized Notifications' },
+    { id: 'activity-logs', num: 41, title: 'Centralized Activity Logs' },
+    { id: 'activity-details', num: 42, title: 'Activity Details' },
+    { id: 'document-centre', num: 43, title: 'Document Centre' },
+    { id: 'company-settings', num: 44, title: 'Company Settings' },
+    { id: 'edit-company', num: 45, title: 'Edit Company Profile' },
+    { id: 'doc-settings', num: 46, title: 'Document Settings' },
+    { id: 'workflow-settings', num: 47, title: 'Workflow Settings' },
+    { id: 'ui-states', num: 51, title: 'Common UI States (15)' }
+  ]}
+];
+
+/* ---------- SINGLE SOURCE OF TRUTH SHARED STATE (Section 53 Continuity) ---------- */
+const state = {
+  viewMode: 'phone',
+  sidebarMode: 'flow',
+  screen: 'dashboard',
+  history: [],
+  galleryCategory: 'All',
+  dateFilter: 'This Month',
+  uiStateDemo: 'approval-confirm',
+  showPwd: false,
+
+  selected: {
+    orderId: 'SO-001',
+    approvalId: 'APR-01',
+    logId: 'LOG-01',
+    supPayId: 'PO-001'
+  },
+
+  filters: {
+    globalQuery: '',
+    orderStatus: 'All',
+    pendingDept: 'All',
+    notifDept: 'All',
+    docType: 'All',
+    logType: 'All'
+  },
+
+  company: {
+    name: 'Cryo Enterprise Equipment Pvt Ltd',
+    email: 'admin@cryoerp.com',
+    phone: '+91 44 2250 4800',
+    website: 'https://cryoenterprise.in',
+    address: 'SIDCO Industrial Estate, Guindy, Chennai, Tamil Nadu 600032',
+    gstin: '33AAACC1029F1Z4',
+    currency: 'INR (₹)',
+    taxPct: 18
+  },
+
+  workflowToggles: {
+    discountApproval: true,
+    poApproval: true,
+    stockAdjApproval: true,
+    qcBeforeDispatch: true,
+    partialMaterialProd: false,
+    partialDeliveries: true,
+    requirePOD: true,
+    enforcePaymentTerms: true
+  },
+
+  // Linked Sales Orders (SO-001 matches Section 53 verbatim!)
+  orders: [
+    {
+      id: 'SO-001', customer: 'ABC Laboratory', product: 'Deep Freezer', qty: 2,
+      orderValue: 150000, received: 100000, paymentStatus: 'Partially Paid',
+      dept: 'Production Management', stage: 'In Production', expectedDelivery: '2026-12-06',
+      refs: { enq: 'ENQ-001', qt: 'QT-001', pi: 'PI-001', cpo: 'CPO-001', pro: 'PRO-001', bom: 'BOM-001', mr: 'MR-001', po: 'PO-001', grn: 'GRN-001', mi: 'MI-001, MI-002', del: 'DEL-001', dc: 'DC-001' },
+      completedStages: 14, // Stage 15 (Production In Progress) is active!
+      dueDate: '2026-12-06'
+    },
+    {
+      id: 'SO-002', customer: 'Apex Pharma Labs', product: 'Laboratory Incubator', qty: 3,
+      orderValue: 285000, received: 285000, paymentStatus: 'Paid',
+      dept: 'Logistics Management', stage: 'Ready for Delivery', expectedDelivery: '2026-11-25',
+      refs: { enq: 'ENQ-002', qt: 'QT-002', pi: 'PI-002', cpo: 'CPO-002', pro: 'PRO-002', bom: 'BOM-002', mr: 'MR-002', po: 'PO-002', grn: 'GRN-002', mi: 'MI-003', del: 'DEL-002', dc: 'DC-002' },
+      completedStages: 17,
+      dueDate: '2026-11-25'
+    },
+    {
+      id: 'SO-003', customer: 'NICR Hyderabad', product: 'Digital Water Bath', qty: 4,
+      orderValue: 134520, received: 134520, paymentStatus: 'Paid',
+      dept: 'Logistics Management', stage: 'Delivered', expectedDelivery: '2026-11-18',
+      refs: { enq: 'ENQ-003', qt: 'QT-003', pi: 'PI-003', cpo: 'CPO-003', pro: 'PRO-003', bom: 'BOM-003', mr: 'MR-003', po: 'PO-003', grn: 'GRN-003', mi: 'MI-004', del: 'DEL-003', dc: 'DC-003' },
+      completedStages: 22,
+      dueDate: '2026-11-18'
+    },
+    {
+      id: 'SO-004', customer: 'MedTech Analytical', product: 'Vertical Deep Freezer (-40°C)', qty: 1,
+      orderValue: 253700, received: 100000, paymentStatus: 'Partially Paid',
+      dept: 'Supply Chain Management', stage: 'Waiting for Materials', expectedDelivery: '2026-12-12',
+      refs: { enq: 'ENQ-004', qt: 'QT-004', pi: 'PI-004', cpo: 'CPO-004', pro: 'PRO-004', bom: 'BOM-004', mr: 'MR-004', po: 'PO-004', grn: '—', mi: '—', del: '—', dc: '—' },
+      completedStages: 10,
+      dueDate: '2026-11-18' // overdue balance
+    }
+  ],
+
+  // Supplier Payables (Confirmed obligations only)
+  supplierPayables: [
+    { poId: 'PO-001', supplier: 'ABC Industrial Supplies', invRef: 'INV-ABC-7821', payable: 22656, paid: 10000, dueDate: '2026-12-10', status: 'Partially Paid' },
+    { poId: 'PO-002', supplier: 'Precision Thermal Components', invRef: 'INV-PTC-309', payable: 48500, paid: 48500, dueDate: '2026-11-15', status: 'Paid' }
+  ],
+
+  // Delivery Expenses
+  deliveryExpenses: [
+    { delId: 'DEL-001', customer: 'ABC Laboratory', method: 'Own Vehicle', est: 3000, actual: 3000, status: 'Pending' },
+    { delId: 'DEL-002', customer: 'NICR Hyderabad', method: 'Courier / Transport', est: 3500, actual: 3500, status: 'Paid' }
+  ],
+
+  // Pending Approvals Queue (Section 20)
+  approvals: [
+    { id: 'APR-01', type: 'Quotation Discount Approval', ref: 'QT-005', dept: 'Sales', by: 'Arun Kumar', date: '2026-11-20', reason: 'Institutional 12% discount requested by BioMed Diagnostics', value: '₹42,000 discount', status: 'Pending' },
+    { id: 'APR-02', type: 'New Material Approval', ref: 'NMA-01', dept: 'Supply Chain', by: 'Deepak Raj', date: '2026-11-20', reason: 'Add Silicone Door Gasket (-80°C) to shared Material Master', value: 'Unit: Metres', status: 'Pending' },
+    { id: 'APR-03', type: 'Stock Adjustment Approval', ref: 'ADJ-01', dept: 'Supply Chain', by: 'Murugan S', date: '2026-11-19', reason: 'Physical cycle count correction (+1 Steel Sheet)', value: '+1 Sheet', status: 'Pending' }
+  ],
+
+  // Centralized Pending Actions (Section 19)
+  pendingActions: [
+    { id: 'PA-1', ref: 'QT-005', dept: 'Sales', action: 'Quotation follow-up & discount review', due: 'Today', priority: 'High', screen: 'approvals' },
+    { id: 'PA-2', ref: 'PRO-001', dept: 'Production', action: 'Daily production update due (Deep Freezer × 2)', due: 'Today', priority: 'High', screen: 'order-journey' },
+    { id: 'PA-3', ref: 'MR-004', dept: 'Supply Chain', action: 'Material shortage: Temperature Controller (2)', due: 'Overdue', priority: 'High', screen: 'ws-supply-chain' },
+    { id: 'PA-4', ref: 'DEL-002', dept: 'Logistics', action: 'Confirm dispatch for Apex Pharma Labs', due: 'Today', priority: 'Normal', screen: 'ws-logistics' }
+  ],
+
+  // Documents (Section 43)
+  documents: [
+    { name: 'Quotation', ref: 'QT-001', party: 'ABC Laboratory', date: '2026-11-12', type: 'Quotations' },
+    { name: 'Proforma Invoice', ref: 'PI-001', party: 'ABC Laboratory', date: '2026-11-14', type: 'Proforma Invoices' },
+    { name: 'Sales Order', ref: 'SO-001', party: 'ABC Laboratory', date: '2026-11-16', type: 'Sales Orders' },
+    { name: 'Supplier Purchase Order', ref: 'PO-001', party: 'ABC Industrial Supplies', date: '2026-11-17', type: 'Supplier POs' },
+    { name: 'Goods Receipt Note', ref: 'GRN-001', party: 'ABC Industrial Supplies', date: '2026-11-19', type: 'GRN' },
+    { name: 'Delivery Challan', ref: 'DC-001', party: 'ABC Laboratory', date: '2026-11-20', type: 'Delivery Challans' },
+    { name: 'Proof of Delivery', ref: 'POD-003', party: 'NICR Hyderabad', date: '2026-11-18', type: 'Proof of Delivery' }
+  ],
+
+  // Centralized Notifications
+  notifications: [
+    { id: 'N-1', dept: 'Sales', title: 'Discount Approval Requested: QT-005', desc: 'Arun Kumar requested 12% institutional discount', time: '15 mins ago', unread: true, screen: 'approvals' },
+    { id: 'N-2', dept: 'Production', title: 'PRO-001 In Production (55%)', desc: 'ABC Laboratory — Deep Freezer × 2 units', time: '1 hr ago', unread: true, screen: 'order-journey' },
+    { id: 'N-3', dept: 'Supply Chain', title: 'GRN-001 Completed & Synced', desc: 'Inventory updated for Steel Sheet & Controller', time: '2 hrs ago', unread: true, screen: 'ws-supply-chain' },
+    { id: 'N-4', dept: 'Logistics', title: 'SO-002 Ready for Delivery', desc: 'Apex Pharma Labs — Laboratory Incubator × 3', time: '3 hrs ago', unread: false, screen: 'ws-logistics' },
+    { id: 'N-5', dept: 'Payments', title: 'Customer Payment Received: ₹1,00,000', desc: 'ABC Laboratory against SO-001 (₹50,000 balance)', time: 'Nov 16', unread: false, screen: 'customer-payments' },
+    { id: 'N-6', dept: 'Employees', title: 'Permissions Updated: Arun Kumar', desc: 'Sales (Standard + Send Quote) & Production (View Only)', time: 'Nov 20', unread: false, screen: 'ws-employees' }
+  ],
+
+  // Centralized Read-Only Activity Logs
+  activityLogs: [
+    { id: 'LOG-01', type: 'Stock Updated', dept: 'Supply Chain', ref: 'GRN-001', by: 'Murugan S', time: '2026-11-20 11:20 AM', desc: 'Accepted 3 Steel Sheets & 2 Controllers into inventory', prev: 'Steel: 5, Ctrl: 0', next: 'Steel: 8, Ctrl: 2' },
+    { id: 'LOG-02', type: 'Permission Changed', dept: 'Employees', ref: 'EMP-001', by: 'Admin', time: '2026-11-20 10:15 AM', desc: 'Updated Arun Kumar permissions for Sales & Production', prev: 'Sales: View Only', next: 'Sales: Standard; Prod: View Only' },
+    { id: 'LOG-03', type: 'Payment Recorded', dept: 'Sales', ref: 'SO-001', by: 'Arun Kumar', time: '2026-11-16 03:40 PM', desc: 'Recorded ₹1,00,000 advance from ABC Laboratory', prev: 'Paid: ₹0', next: 'Paid: ₹1,00,000 (Bal: ₹50,000)' }
+  ],
+
+  recentSearches: ['SO-001', 'ABC Laboratory', 'Deep Freezer', 'PRO-001']
+};
+
+/* ---------- HELPERS ---------- */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const fmtINR = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const getOrder = (id) => state.orders.find((o) => o.id === id) || state.orders[0];
+const getApproval = (id) => state.approvals.find((a) => a.id === id) || state.approvals[0];
+const getLog = (id) => state.activityLogs.find((l) => l.id === id) || state.activityLogs[0];
+
+function badgeHTML(status) {
+  const map = {
+    'In Production': 'bg-blue-50 text-blue-700 border-blue-200',
+    'Ready for Delivery': 'bg-teal-50 text-teal-700 border-teal-200',
+    'Delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Waiting for Materials': 'bg-amber-50 text-amber-700 border-amber-200',
+    'On Hold': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Cancelled': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Partially Paid': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Paid': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Pending': 'bg-amber-50 text-amber-700 border-amber-200',
+    'Approved': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'Rejected': 'bg-rose-50 text-rose-700 border-rose-200',
+    'High': 'bg-rose-50 text-rose-700 border-rose-200',
+    'Normal': 'bg-slate-100 text-slate-700 border-slate-200'
+  };
+  return `<span class="inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full border ${map[status] || 'bg-slate-100 text-slate-700 border-slate-200'} whitespace-nowrap">${esc(status)}</span>`;
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('phoneToast');
+  if (!el) return;
+  const cls = type === 'error' ? 'bg-rose-600 text-white' : type === 'warning' ? 'bg-amber-600 text-white' : 'bg-[#1E3A8A] text-white';
+  el.className = `toast-bar rounded-xl px-3.5 py-2.5 text-xs font-medium shadow-lg flex items-center gap-2 ${cls}`;
+  el.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 shrink-0"></i><span class="flex-1">${esc(msg)}</span>`;
+  el.classList.remove('hidden');
+  lucide.createIcons({ nodes: [el] });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+function navigate(screenId, opts = {}) {
+  if (opts.key && opts.val) state.selected[opts.key] = opts.val;
+  if (!opts.skipHistory && state.screen !== screenId) {
+    state.history.push(state.screen);
+    if (state.history.length > 25) state.history.shift();
+  }
+  state.screen = screenId;
+  state.viewMode = 'phone';
+  renderAll();
+}
+
+function goBack(fallback = 'dashboard') {
+  state.screen = state.history.length ? state.history.pop() : fallback;
+  renderAll();
+}
+
+/* ---------- CHROME ---------- */
+function renderTopBar(title, opts = {}) {
+  const back = opts.back ? `<button type="button" data-action="go-back" data-fallback="${opts.fallback || 'dashboard'}" class="p-1.5 -ml-1.5 rounded-lg text-slate-700 hover:bg-slate-100"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>` : '';
+  return `<div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between gap-2 shrink-0"><div class="flex items-center gap-2 min-w-0">${back}<h1 class="text-[15px] font-semibold text-slate-900 truncate">${esc(title)}</h1></div><div class="flex items-center gap-1.5 shrink-0">${opts.right || ''}</div></div>`;
+}
+
+function renderAdminBottomNav(active) {
+  const tabs = [['home', 'Home', 'home', 'dashboard'], ['departments', 'Depts', 'layout-grid', 'departments-overview'], ['orders', 'Orders', 'package', 'all-orders'], ['reports', 'Reports', 'bar-chart-3', 'reports-dashboard'], ['more', 'More', 'menu', 'more']];
+  return `<nav class="bg-white border-t border-slate-200 px-1 pt-1.5 pb-2 grid grid-cols-5 shrink-0">${tabs.map(([id, lbl, ic, sc]) => `<button type="button" data-nav="${sc}" class="flex flex-col items-center justify-center gap-0.5 py-0.5 rounded-lg ${id === active ? 'text-[#1E3A8A] font-semibold' : 'text-slate-500 hover:text-slate-800'}"><i data-lucide="${ic}" class="w-4.5 h-4.5 ${id === active ? 'stroke-[2.3]' : ''}"></i><span class="text-[10px]">${lbl}</span></button>`).join('')}</nav>`;
+}
+
+function renderDeptBottomNav(tabs) {
+  return `<nav class="bg-white border-t border-slate-200 px-1 pt-1.5 pb-2 grid grid-cols-5 shrink-0">${tabs.map(([lbl, ic, act], idx) => `<button type="button" data-action="toast" data-msg="Opened ${lbl} (Full Admin Access)" class="flex flex-col items-center justify-center gap-0.5 py-0.5 rounded-lg ${idx === 0 ? 'text-[#1E3A8A] font-semibold' : 'text-slate-500'}"><i data-lucide="${ic}" class="w-4.5 h-4.5"></i><span class="text-[10px]">${lbl}</span></button>`).join('')}</nav>`;
+}
+
+function renderStickyAction(html) {
+  return `<div class="bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-2.5 shrink-0">${html}</div>`;
+}
+
+/* ==========================================================================
+   SCREEN RENDERERS (SECTIONS 5–51)
+   ========================================================================== */
+
+// 5. ADMIN LOGIN
+function renderAdminLogin() {
+  return `<div class="phone-scroll p-5 flex flex-col justify-center space-y-5 bg-white">
+    <div class="text-center space-y-1.5"><div class="w-12 h-12 rounded-2xl bg-[#1E3A8A] text-white font-bold text-xl flex items-center justify-center mx-auto">C</div><h1 class="text-lg font-bold text-slate-900">Cryo Enterprise ERP</h1><p class="text-xs text-slate-500">Sign in to Centralized Admin & Management</p></div>
+    <div class="space-y-3 text-xs">
+      <div><label class="block font-medium mb-1">Email Address</label><input type="email" value="admin@cryoerp.com" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" /></div>
+      <div><label class="block font-medium mb-1">Password</label><div class="relative"><input type="${state.showPwd ? 'text' : 'password'}" value="••••••••••" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl pr-12" /><button type="button" data-action="toggle-pwd" class="absolute right-3 top-2.5 text-[#1D4ED8] font-semibold">${state.showPwd ? 'Hide' : 'Show'}</button></div></div>
+      <div class="text-right"><button type="button" data-action="toast" data-msg="Password reset link sent to admin@cryoerp.com" class="text-[#1D4ED8] font-medium">Forgot Password?</button></div>
+      <button type="button" data-nav="dashboard" class="w-full py-3 rounded-xl bg-[#1E3A8A] text-white font-semibold text-sm">Login</button>
+    </div>
+    <div class="text-[11px] text-center text-slate-400">Administrative access is identified automatically — no role picker required.</div>
+  </div>`;
+}
+
+// 6. CENTRALIZED ADMIN DASHBOARD
+function renderDashboard() {
+  const totalSales = state.orders.reduce((a, o) => a + o.orderValue, 0);
+  const activeOrders = state.orders.filter((o) => o.stage !== 'Delivered').length;
+  const inProd = state.orders.filter((o) => o.stage === 'In Production').length;
+  const pendingPay = state.orders.reduce((a, o) => a + Math.max(0, o.orderValue - o.received), 0);
+  const readyDel = state.orders.filter((o) => o.stage === 'Ready for Delivery').length;
+  const completed = state.orders.filter((o) => o.stage === 'Delivered').length;
+  const unread = state.notifications.filter((n) => n.unread).length;
+
+  return `
+    <div class="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+      <div>
+        <button type="button" data-nav="dept-switcher" class="flex items-center gap-1 text-[11px] font-semibold text-[#1D4ED8] uppercase tracking-wide"><span>Cryo Enterprise • Admin</span><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>
+        <div class="text-sm font-bold text-slate-900">Admin Management</div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-nav="notifications" class="relative p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700"><i data-lucide="bell" class="w-4 h-4"></i>${unread ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center">${unread}</span>` : ''}</button>
+        <button type="button" data-nav="profile" class="w-8 h-8 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold flex items-center justify-center">AD</button>
+      </div>
+    </div>
+
+    <div class="phone-scroll p-3.5 space-y-4">
+      <!-- Global Search & Date Filter -->
+      <div class="space-y-2">
+        <button type="button" data-nav="global-search" class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-400 flex items-center gap-2 hover:border-[#1D4ED8]"><i data-lucide="search" class="w-4 h-4"></i><span>Search SO-001, ABC Laboratory, Deep Freezer...</span></button>
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar">${['Today', 'This Week', 'This Month', 'Custom Range'].map((df) => `<button type="button" data-action="set-date" data-val="${df}" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap border ${state.dateFilter === df ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${df}</button>`).join('')}</div>
+      </div>
+
+      <!-- 6 Business Overview Cards -->
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" data-nav="report-sales" class="bg-white border border-slate-200 rounded-xl p-2.5 text-left"><div class="text-[11px] text-slate-500">Total Sales Value</div><div class="text-base font-bold text-[#1E3A8A] mt-0.5">${fmtINR(totalSales)}</div></button>
+        <button type="button" data-nav="all-orders" class="bg-white border border-slate-200 rounded-xl p-2.5 text-left"><div class="text-[11px] text-slate-500">Active Sales Orders</div><div class="text-base font-bold text-slate-900 mt-0.5">${activeOrders}</div></button>
+        <button type="button" data-nav="ws-production" class="bg-white border border-slate-200 rounded-xl p-2.5 text-left"><div class="text-[11px] text-slate-500">In Production</div><div class="text-base font-bold text-blue-700 mt-0.5">${inProd}</div></button>
+        <button type="button" data-nav="outstanding-payments" class="bg-white border border-slate-200 rounded-xl p-2.5 text-left"><div class="text-[11px] text-slate-500">Pending Payments</div><div class="text-base font-bold text-amber-700 mt-0.5">${fmtINR(pendingPay)}</div></button>
+        <button type="button" data-nav="ws-logistics" class="bg-white border border-slate-200 rounded-xl p-2.5 text-left"><div class="text-[11px] text-slate-500">Ready for Delivery</div><div class="text-base font-bold text-teal-700 mt-0.5">${readyDel}</div></button>
+        <button type="button" data-nav="all-orders" class="bg-white border border-slate-200 rounded-xl p-2.5 text-left"><div class="text-[11px] text-slate-500">Completed Orders</div><div class="text-base font-bold text-emerald-700 mt-0.5">${completed}</div></button>
+      </div>
+
+      <!-- 6 Department Shortcuts -->
+      <div>
+        <div class="text-xs font-semibold text-slate-500 uppercase mb-2">Departments & Finance</div>
+        <div class="grid grid-cols-3 gap-2">
+          ${[['Sales', 'briefcase', '2', 'ws-sales'], ['Production', 'factory', '1', 'ws-production'], ['Supply Chain', 'boxes', '2', 'ws-supply-chain'], ['Logistics', 'truck', '1', 'ws-logistics'], ['Employees', 'users', '4', 'ws-employees'], ['Payments', 'indian-rupee', '2', 'payments-dashboard']].map(([lbl, ic, cnt, sc]) => `
+            <button type="button" data-nav="${sc}" class="bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-2.5 flex flex-col items-center gap-1 relative">
+              <span class="absolute top-1.5 right-1.5 text-[10px] font-bold px-1.5 rounded-full bg-blue-50 text-[#1D4ED8]">${cnt}</span>
+              <i data-lucide="${ic}" class="w-4.5 h-4.5 text-[#1E3A8A]"></i>
+              <span class="text-[11px] font-semibold text-slate-800">${lbl}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- Needs Attention -->
+      <div>
+        <div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-slate-500 uppercase">Needs Attention</span><button type="button" data-nav="pending-actions" class="text-xs font-medium text-[#1D4ED8]">Queue (${state.pendingActions.length})</button></div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button type="button" data-nav="approvals" class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-left"><div class="font-semibold text-amber-800">${state.approvals.filter((a) => a.status === 'Pending').length} Pending Approvals</div><div class="text-[10px] text-amber-700">Discount, Material, Stock</div></button>
+          <button type="button" data-nav="pending-actions" class="bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-left"><div class="font-semibold text-rose-800">Material Shortage</div><div class="text-[10px] text-rose-700">MR-004 overdue</div></button>
+        </div>
+      </div>
+
+      <!-- Recent Orders -->
+      <div>
+        <div class="flex justify-between items-center mb-2"><span class="text-xs font-semibold text-slate-500 uppercase">Recent Orders</span><button type="button" data-nav="all-orders" class="text-xs font-medium text-[#1D4ED8]">View All</button></div>
+        ${state.orders.slice(0, 2).map((o) => `
+          <button type="button" data-open="order-journey" data-key="orderId" data-val="${o.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 mb-2 space-y-1 hover:border-[#1D4ED8]">
+            <div class="flex justify-between items-center"><span class="text-xs font-semibold text-[#1D4ED8]">${esc(o.id)} • ${esc(o.customer)}</span>${badgeHTML(o.stage)}</div>
+            <div class="text-xs text-slate-700">${esc(o.product)} × ${o.qty} • <strong>${fmtINR(o.orderValue)}</strong></div>
+            <div class="text-[11px] text-slate-500">Due ${esc(o.expectedDelivery)} • Tap for 22-stage journey</div>
+          </button>`).join('')}
+      </div>
+    </div>
+    ${renderAdminBottomNav('home')}
+  `;
+}
+
+// 7. DEPARTMENTS OVERVIEW
+function renderDepartmentsOverview() {
+  const depts = [
+    ['Sales Management', 'ws-sales', 'briefcase', [['New Enq', 2], ['Follow-ups', 3], ['Quotes', 4], ['Orders', 4]]],
+    ['Production Management', 'ws-production', 'factory', [['New PRO', 1], ['Wait Mat.', 1], ['In Prod', 1], ['Completed', 2]]],
+    ['Supply Chain Management', 'ws-supply-chain', 'boxes', [['Pending MR', 1], ['Low Stock', 2], ['Open PO', 1], ['GRN Pend', 1]]],
+    ['Logistics Management', 'ws-logistics', 'truck', [['Ready', 1], ['Planned', 1], ['In Transit', 1], ['Delivered', 1]]],
+    ['Employee Management', 'ws-employees', 'users', [['Total Emp', 4], ['Active', 2], ['Depts', 5], ['Inactive', 1]]]
+  ];
+  return `${renderTopBar('Departments', { right: `<button type="button" data-nav="dept-switcher" class="text-xs font-semibold text-[#1D4ED8]">Switch</button>` })}<div class="phone-scroll p-3.5 space-y-3">${depts.map(([name, sc, ic, stats]) => `
+    <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+      <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-4 h-4"></i></div><strong class="text-sm text-slate-900">${name}</strong></div><button type="button" data-nav="${sc}" class="px-3 py-1 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Open →</button></div>
+      <div class="grid grid-cols-4 gap-1.5 text-center">${stats.map(([l, v]) => `<div class="bg-slate-50 rounded-lg p-1.5"><div class="text-xs font-bold text-slate-900">${v}</div><div class="text-[9px] text-slate-500">${l}</div></div>`).join('')}</div>
+    </div>`).join('')}</div>${renderAdminBottomNav('departments')}`;
+}
+
+// 8. DEPARTMENT SWITCHER
+function renderDeptSwitcher() {
+  const items = [['Admin Dashboard', 'Centralized Overview', 'dashboard', 'shield'], ['Sales Management', 'Enquiries, Quotes, Orders', 'ws-sales', 'briefcase'], ['Production Management', 'PRO, BOM, Daily, QC', 'ws-production', 'factory'], ['Supply Chain Management', 'MR, Inventory, PO, GRN', 'ws-supply-chain', 'boxes'], ['Logistics Management', 'Plan, Pack, Dispatch, POD', 'ws-logistics', 'truck'], ['Employee Management', 'Users, Depts, Permissions', 'ws-employees', 'users']];
+  return `${renderTopBar('Switch Department', { back: true, fallback: 'dashboard' })}<div class="phone-scroll p-3.5 space-y-2">${items.map(([t, d, sc, ic]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3.5 flex items-center justify-between text-left"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-blue-50 text-[#1E3A8A] flex items-center justify-center"><i data-lucide="${ic}" class="w-4.5 h-4.5"></i></div><div><div class="text-sm font-semibold">${t}</div><div class="text-xs text-slate-500">${d}</div></div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div>`;
+}
+
+// 9–13. FULL-ACCESS DEPARTMENT WORKSPACES (Reuses Dept Bottom Nav + Return to Admin pill — NEVER 2 bottom navs!)
+function renderDeptWorkspace(title, subtitle, cards, navTabs) {
+  return `
+    <div class="bg-[#1E3A8A] text-white px-4 py-2 flex items-center justify-between text-xs shrink-0">
+      <button type="button" data-nav="dashboard" class="flex items-center gap-1 font-semibold hover:underline"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Return to Admin</button>
+      <button type="button" data-nav="dept-switcher" class="px-2 py-0.5 rounded bg-white/15 font-medium">Switch Dept ▾</button>
+    </div>
+    ${renderTopBar(title, { right: badgeHTML('Full Access') })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs text-[#1E3A8A]"><strong>Shared Live Module:</strong> ${esc(subtitle)}</div>
+      <div class="grid grid-cols-2 gap-2">${cards.map(([t, sub, sc]) => `<button type="button" ${sc ? `data-nav="${sc}"` : `data-action="toast" data-msg="Opened ${t} (Admin Full Access)"`} class="bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3 text-left"><div class="text-xs font-semibold text-slate-900">${t}</div><div class="text-[11px] text-slate-500 mt-0.5">${sub}</div></button>`).join('')}</div>
+      <button type="button" data-open="order-journey" data-key="orderId" data-val="SO-001" class="w-full bg-white border border-blue-200 rounded-xl p-3 text-left text-xs"><div class="font-semibold text-[#1D4ED8]">Linked Order: SO-001 • ABC Laboratory</div><div class="text-slate-600">Deep Freezer × 2 • Stage: In Production • Paid ₹1,00,000 / ₹1,50,000</div></button>
+    </div>
+    ${renderDeptBottomNav(navTabs)}
+  `;
+}
+
+// 14. GLOBAL SEARCH
+function renderGlobalSearch() {
+  const q = state.filters.globalQuery.trim().toLowerCase();
+  const hits = !q ? [] : [
+    ...state.orders.filter((o) => `${o.id} ${o.customer} ${o.product} ${o.refs.pro} ${o.refs.po}`.toLowerCase().includes(q)).map((o) => ({ grp: 'Orders', title: `${o.id} — ${o.customer}`, sub: `${o.product} • ${o.stage}`, sc: 'order-journey', k: 'orderId', v: o.id })),
+    ...state.documents.filter((d) => `${d.ref} ${d.name} ${d.party}`.toLowerCase().includes(q)).map((d) => ({ grp: 'Documents', title: `${d.ref} (${d.name})`, sub: d.party, sc: 'document-centre', k: null, v: null }))
+  ];
+  return `${renderTopBar('Global Search', { back: true, fallback: 'dashboard' })}<div class="bg-white border-b p-3 shrink-0"><input data-filter="globalQuery" value="${esc(state.filters.globalQuery)}" type="text" placeholder="Search SO-001, ABC Laboratory, Deep Freezer, PO-001..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg" /></div><div class="phone-scroll p-3.5 space-y-3 text-xs">${!q ? `<div><div class="font-semibold text-slate-500 uppercase mb-2">Recent Searches</div><div class="flex flex-wrap gap-1.5">${state.recentSearches.map((rs) => `<button type="button" data-action="quick-search" data-val="${esc(rs)}" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 font-medium">${esc(rs)}</button>`).join('')}</div></div>` : hits.length ? hits.map((h) => `<button type="button" ${h.k ? `data-open="${h.sc}" data-key="${h.k}" data-val="${h.v}"` : `data-nav="${h.sc}"`} class="w-full text-left bg-white border border-slate-200 rounded-xl p-3"><div class="text-[10px] font-bold uppercase text-[#1D4ED8]">${h.grp}</div><div class="font-semibold text-slate-900">${esc(h.title)}</div><div class="text-slate-500">${esc(h.sub)}</div></button>`).join('') : `<div class="bg-white border rounded-xl p-5 text-center text-slate-500">No matches found for "${esc(q)}".</div>`}</div>`;
+}
+
+// 15. ALL ORDERS LIST
+function renderAllOrders() {
+  const list = state.orders.filter((o) => state.filters.orderStatus === 'All' || o.stage === state.filters.orderStatus);
+  return `${renderTopBar('All Orders')}<div class="bg-white border-b px-3.5 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${['All', 'In Production', 'Waiting for Materials', 'Ready for Delivery', 'Delivered', 'On Hold'].map((st) => `<button type="button" data-filter-tab="orderStatus" data-val="${st}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${state.filters.orderStatus === st ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${st}</button>`).join('')}</div><div class="phone-scroll p-3.5 space-y-2.5">${list.map((o) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between items-start"><div><div class="font-semibold text-[#1D4ED8]">${esc(o.id)} • ${esc(o.dept.replace(' Management', ''))}</div><div class="text-sm font-semibold text-slate-900">${esc(o.customer)}</div><div class="text-slate-600">${esc(o.product)} × ${o.qty} • ${fmtINR(o.orderValue)}</div></div>${badgeHTML(o.stage)}</div><div class="flex justify-between text-[11px] text-slate-500"><span>Bal: <strong class="text-amber-700">${fmtINR(o.orderValue - o.received)}</strong></span><span>Due: ${esc(o.expectedDelivery)}</span></div><div class="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100"><button type="button" data-open="order-journey" data-key="orderId" data-val="${o.id}" class="py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">Order Journey</button><button type="button" data-open="manage-order" data-key="orderId" data-val="${o.id}" class="py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Manage Order</button></div></div>`).join('')}</div>${renderAdminBottomNav('orders')}`;
+}
+
+// 16. COMPLETE ORDER JOURNEY (ALL 22 STAGES!)
+function renderOrderJourney() {
+  const o = getOrder(state.selected.orderId);
+  const all22 = [
+    [1, 'Enquiry', o.refs.enq, 'ws-sales'], [2, 'Enquiry Follow-up', o.refs.enq, 'ws-sales'], [3, 'Qualified Enquiry', o.refs.enq, 'ws-sales'],
+    [4, 'Quotation', o.refs.qt, 'ws-sales'], [5, 'Quotation Accepted', o.refs.qt, 'ws-sales'], [6, 'Proforma Invoice', o.refs.pi, 'ws-sales'],
+    [7, 'Customer Purchase Order', o.refs.cpo, 'ws-sales'], [8, 'Sales Order Confirmed', o.id, 'ws-sales'],
+    [9, 'Production Order', o.refs.pro, 'ws-production'], [10, 'BOM Confirmed', o.refs.bom, 'ws-production'], [11, 'Material Request', o.refs.mr, 'ws-supply-chain'],
+    [12, 'Material Issue', o.refs.mi, 'ws-supply-chain'], [13, 'Material Receipt', o.refs.grn, 'ws-production'], [14, 'Production Planning', o.refs.pro, 'ws-production'],
+    [15, 'Production In Progress', o.refs.pro, 'ws-production'], [16, 'Quality Check', o.refs.pro, 'ws-production'], [17, 'Production Completed', o.refs.pro, 'ws-production'],
+    [18, 'Delivery Planning', o.refs.del, 'ws-logistics'], [19, 'Packing', o.refs.del, 'ws-logistics'], [20, 'Dispatch', o.refs.dc, 'ws-logistics'],
+    [21, 'Delivery Tracking', o.refs.del, 'ws-logistics'], [22, 'Customer Delivery Confirmed', o.refs.del, 'ws-logistics']
+  ];
+  const doneList = all22.filter((s) => s[0] <= o.completedStages);
+  const activeAndNext = all22.filter((s) => s[0] > o.completedStages);
+
+  return `
+    ${renderTopBar(`Journey: ${o.id}`, { back: true, fallback: 'all-orders', right: `<button type="button" data-open="manage-order" data-key="orderId" data-val="${o.id}" class="px-2.5 py-1 text-xs rounded-lg bg-[#1E3A8A] text-white font-semibold">Manage</button>` })}
+    <div class="phone-scroll p-3.5 space-y-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-xs space-y-1.5">
+        <div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(o.customer)}</strong>${badgeHTML(o.stage)}</div>
+        <div>${esc(o.product)} × ${o.qty} units • Value: <strong>${fmtINR(o.orderValue)}</strong></div>
+        <div class="flex justify-between text-[11px] text-slate-500"><span>Paid: <strong class="text-emerald-700">${fmtINR(o.received)}</strong></span><span>Bal: <strong class="text-amber-700">${fmtINR(o.orderValue - o.received)}</strong></span><span>Due: ${esc(o.expectedDelivery)}</span></div>
+      </div>
+
+      <!-- Completed Stages (Expandable to keep screen compact) -->
+      <details class="bg-white border border-emerald-200 rounded-xl p-3 text-xs">
+        <summary class="font-semibold text-emerald-800 cursor-pointer flex justify-between items-center"><span>✓ ${doneList.length} Completed Stages (Steps 1–${doneList.length})</span><span class="text-[10px]">Tap to expand</span></summary>
+        <div class="mt-2 pt-2 border-t space-y-1.5">${doneList.map(([n, lbl, ref, sc]) => `<button type="button" data-nav="${sc}" class="w-full flex justify-between py-1 text-left hover:bg-slate-50 rounded px-1"><span>${n}. ${lbl}</span><span class="text-[#1D4ED8] font-medium">${esc(ref)}</span></button>`).join('')}</div>
+      </details>
+
+      <!-- Current & Upcoming Stages -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+        <div class="font-semibold text-slate-500 uppercase text-[11px]">Current & Remaining Stages</div>
+        ${activeAndNext.map(([n, lbl, ref, sc], idx) => `
+          <button type="button" data-nav="${sc}" class="w-full text-left p-2.5 rounded-lg border flex items-center justify-between ${idx === 0 ? 'bg-blue-50 border-[#1D4ED8]' : 'bg-slate-50 border-slate-200'}">
+            <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${idx === 0 ? 'bg-[#1E3A8A] text-white' : 'bg-slate-200 text-slate-500'}">${n}</span><span class="${idx === 0 ? 'font-bold text-[#1E3A8A]' : 'text-slate-600'}">${lbl}</span></div>
+            <span class="text-[11px] font-medium ${idx === 0 ? 'text-[#1D4ED8]' : 'text-slate-400'}">${idx === 0 ? 'Active →' : esc(ref)}</span>
+          </button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// 17. MANAGE ORDER ACTION HUB (Only valid actions for current stage!)
+function renderManageOrder() {
+  const o = getOrder(state.selected.orderId);
+  const validActions = o.stage === 'In Production'
+    ? [['Update Daily Production', 'ws-production'], ['Complete Quality Check', 'ws-production'], ['Record Customer Payment', 'record-cust-payment'], ['Hold / Cancel Order', 'order-hold-cancel']]
+    : o.stage === 'Ready for Delivery'
+      ? [['Create Delivery Plan', 'ws-logistics'], ['Confirm Dispatch', 'ws-logistics'], ['Hold / Cancel Order', 'order-hold-cancel']]
+      : [['View Complete Order Journey', 'order-journey'], ['Record Customer Payment', 'record-cust-payment']];
+
+  return `${renderTopBar(`Manage ${o.id}`, { back: true, fallback: 'all-orders' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs space-y-1"><div class="flex justify-between"><strong class="text-sm text-slate-900">${esc(o.customer)}</strong>${badgeHTML(o.stage)}</div><div>Current Dept: <strong>${esc(o.dept)}</strong> • Only valid workflow actions are shown below.</div></div><div class="space-y-2">${validActions.map(([lbl, sc], idx) => `<button type="button" data-open="${sc}" data-key="orderId" data-val="${o.id}" class="w-full py-3 px-4 rounded-xl text-xs font-semibold flex justify-between items-center ${idx === 0 ? 'bg-[#1E3A8A] text-white' : 'bg-white border border-slate-200 text-slate-800'}"><span>${lbl}</span><i data-lucide="arrow-right" class="w-4 h-4"></i></button>`).join('')}</div></div>`;
+}
+
+// 18. ORDER HOLD & CANCELLATION
+function renderOrderHoldCancel() {
+  const o = getOrder(state.selected.orderId);
+  return `${renderTopBar('Hold / Cancel Order', { back: true, fallback: 'manage-order' })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-800 space-y-1"><div class="font-semibold">Linked Impacts for ${esc(o.id)}</div><div>• Production: ${esc(o.refs.pro)} (${esc(o.stage)})<br/>• Supply Chain: ${esc(o.refs.mr)}, ${esc(o.refs.po)}<br/>• Customer Paid: ${fmtINR(o.received)} (requires refund/credit note if cancelled)</div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3"><div><label class="block font-medium mb-1">Action *</label><select id="hcAct" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option value="On Hold">Put Order on Hold</option><option value="In Production">Resume Order</option><option value="Cancelled">Cancel Order (Controlled Reversal)</option></select></div><div><label class="block font-medium mb-1">Reason *</label><textarea id="hcReason" rows="2" placeholder="Document business reason..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea></div></div></div>${renderStickyAction(`<button type="button" data-action="confirm-hc" data-id="${o.id}" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold">Confirm Action</button>`)}`;
+}
+
+// 19–21. PENDING ACTIONS & APPROVALS
+function renderPendingActions() {
+  const list = state.pendingActions.filter((p) => state.filters.pendingDept === 'All' || p.dept === state.filters.pendingDept);
+  return `${renderTopBar('Pending Actions', { back: true, fallback: 'dashboard' })}<div class="bg-white border-b px-3.5 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${['All', 'Sales', 'Production', 'Supply Chain', 'Logistics'].map((d) => `<button type="button" data-filter-tab="pendingDept" data-val="${d}" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${state.filters.pendingDept === d ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${d}</button>`).join('')}</div><div class="phone-scroll p-3.5 space-y-2.5">${list.map((p) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><span class="font-semibold text-[#1D4ED8]">${esc(p.ref)} • ${esc(p.dept)}</span>${badgeHTML(p.priority)}</div><div class="font-semibold text-slate-900">${esc(p.action)}</div><div class="flex justify-between items-center pt-1"><span class="text-slate-500">Due: ${esc(p.due)}</span><button type="button" data-nav="${p.screen}" class="px-3 py-1 rounded-lg bg-[#1E3A8A] text-white font-semibold">Resolve →</button></div></div>`).join('')}</div>`;
+}
+function renderApprovals() {
+  return `${renderTopBar('Approvals Queue', { back: true, fallback: 'dashboard' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.approvals.map((a) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between items-start"><div><div class="font-semibold text-[#1D4ED8]">${esc(a.type)}</div><div class="text-slate-900 font-semibold">${esc(a.ref)} • ${esc(a.dept)} (${esc(a.value)})</div><div class="text-slate-500">By ${esc(a.by)} • ${esc(a.date)}</div></div>${badgeHTML(a.status)}</div><div class="text-slate-600">${esc(a.reason)}</div><div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-100"><button type="button" data-open="approval-details" data-key="approvalId" data-val="${a.id}" class="py-1.5 rounded-lg bg-slate-100 font-medium">View</button><button type="button" data-action="apr-decide" data-id="${a.id}" data-val="Approved" class="py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">Approve</button><button type="button" data-action="apr-decide" data-id="${a.id}" data-val="Rejected" class="py-1.5 rounded-lg bg-rose-50 text-rose-700 font-semibold">Reject</button></div></div>`).join('')}</div>`;
+}
+function renderApprovalDetails() {
+  const a = getApproval(state.selected.approvalId);
+  return `${renderTopBar(a.id, { back: true, fallback: 'approvals' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-xs space-y-2"><div class="flex justify-between"><strong class="text-sm">${esc(a.type)}</strong>${badgeHTML(a.status)}</div><div>Reference: <strong>${esc(a.ref)}</strong> (${esc(a.dept)})</div><div>Requested By: <strong>${esc(a.by)}</strong> on ${esc(a.date)}</div><div class="bg-slate-50 rounded-lg p-2.5"><strong>Reason:</strong> ${esc(a.reason)}</div><div><strong>Impact:</strong> ${esc(a.value)}</div></div></div>${renderStickyAction(`<button type="button" data-action="apr-decide" data-id="${a.id}" data-val="Rejected" class="px-4 py-2.5 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold">Reject</button><button type="button" data-action="apr-decide" data-id="${a.id}" data-val="Approved" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold">Approve Request</button>`)}`;
+}
+
+// 22–24. SHARED MASTER DATA
+function renderMasterData() {
+  const items = [['Customers', 4, 'customers-admin'], ['Products', 5, 'products-admin'], ['Materials', 4, 'ws-supply-chain'], ['Suppliers', 2, 'ws-supply-chain'], ['Vehicles', 2, 'ws-logistics'], ['Courier Providers', 2, 'ws-logistics'], ['Employees', 4, 'ws-employees'], ['Departments', 5, 'departments-overview'], ['Roles', 4, 'ws-employees']];
+  return `${renderTopBar('Centralized Master Data', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-2">${items.map(([name, cnt, sc]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center text-xs hover:border-[#1D4ED8]"><span class="font-semibold text-slate-900">${name}</span><span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1D4ED8] font-bold">${cnt} →</span></button>`).join('')}</div>`;
+}
+function renderCustomersAdmin() {
+  return `${renderTopBar('Customers (Shared Master)', { back: true, fallback: 'master-data' })}<div class="phone-scroll p-3.5 space-y-2.5">${[['ABC Laboratory', '+91 98402 55110', 1, 50000], ['Apex Pharma Labs', '+91 98201 44512', 1, 0], ['NICR Hyderabad', '+91 94440 77231', 0, 0], ['MedTech Analytical', '+91 98450 61904', 1, 153700]].map(([n, ph, act, bal]) => `<div class="bg-white border border-slate-200 rounded-xl p-3 text-xs space-y-1"><div class="flex justify-between"><strong class="text-sm">${n}</strong><span class="text-[11px] font-semibold ${bal > 0 ? 'text-amber-700' : 'text-emerald-700'}">Bal: ${fmtINR(bal)}</span></div><div class="text-slate-500">${ph} • Active Orders: ${act}</div></div>`).join('')}</div>`;
+}
+function renderProductsAdmin() {
+  return `${renderTopBar('Products (Shared Master)', { back: true, fallback: 'master-data' })}<div class="phone-scroll p-3.5 space-y-2.5">${[['CRYO-DF80', 'Deep Freezer (-80°C)', 'DF80-340L', 75000], ['CRYO-INC200', 'Laboratory Incubator', 'INC-200D', 95000], ['CRYO-WB18', 'Digital Water Bath', 'WB-18SS', 28500], ['CRYO-DF40', 'Vertical Deep Freezer (-40°C)', 'DF40-260L', 215000]].map(([c, n, m, p]) => `<div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center text-xs"><div><div class="text-[10px] font-bold text-[#1D4ED8]">${c}</div><div class="font-semibold text-slate-900">${n}</div><div class="text-slate-500">${m}</div></div><strong class="text-slate-900">${fmtINR(p)}</strong></div>`).join('')}</div>`;
+}
+
+// 25–31. PAYMENTS & EXPENSES (Clean separation of Customer Receipts vs Supplier Payables vs Delivery Expenses)
+function renderPaymentsDashboard() {
+  const custRec = state.orders.reduce((a, o) => a + o.received, 0);
+  const custOut = state.orders.reduce((a, o) => a + Math.max(0, o.orderValue - o.received), 0);
+  const supPay = state.supplierPayables.reduce((a, s) => a + Math.max(0, s.payable - s.paid), 0);
+  const delExp = state.deliveryExpenses.reduce((a, d) => a + d.actual, 0);
+  return `${renderTopBar('Payments & Expenses', { back: true, fallback: 'dashboard' })}<div class="phone-scroll p-3.5 space-y-3"><div class="grid grid-cols-2 gap-2 text-xs"><div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3"><div class="text-[10px] text-emerald-700">Customer Received</div><div class="text-base font-bold text-emerald-800">${fmtINR(custRec)}</div></div><div class="bg-amber-50 border border-amber-200 rounded-xl p-3"><div class="text-[10px] text-amber-700">Customer Outstanding</div><div class="text-base font-bold text-amber-800">${fmtINR(custOut)}</div></div><div class="bg-rose-50 border border-rose-200 rounded-xl p-3"><div class="text-[10px] text-rose-700">Supplier Payables</div><div class="text-base font-bold text-rose-800">${fmtINR(supPay)}</div></div><div class="bg-blue-50 border border-blue-200 rounded-xl p-3"><div class="text-[10px] text-[#1D4ED8]">Delivery Expenses</div><div class="text-base font-bold text-[#1E3A8A]">${fmtINR(delExp)}</div></div></div><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs font-medium">${[['Customer Payments', 'customer-payments'], ['Outstanding Customer Balances', 'outstanding-payments'], ['Supplier Payments', 'supplier-payments'], ['Delivery Expenses', 'delivery-expenses']].map(([l, s]) => `<button type="button" data-nav="${s}" class="w-full px-3.5 py-3 flex justify-between hover:bg-slate-50"><span>${l}</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div></div>`;
+}
+function renderCustomerPayments() {
+  return `${renderTopBar('Customer Payments', { back: true, fallback: 'payments-dashboard' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.orders.map((o) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><strong class="text-sm">${esc(o.customer)}</strong><div class="text-[#1D4ED8]">${esc(o.id)}</div></div>${badgeHTML(o.paymentStatus)}</div><div class="flex justify-between text-slate-600"><span>Order: ${fmtINR(o.orderValue)}</span><span>Paid: ${fmtINR(o.received)}</span><span>Bal: <strong class="text-amber-700">${fmtINR(o.orderValue - o.received)}</strong></span></div>${o.orderValue > o.received ? `<button type="button" data-open="record-cust-payment" data-key="orderId" data-val="${o.id}" class="w-full py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Record Payment</button>` : ''}</div>`).join('')}</div>`;
+}
+function renderOutstandingPayments() {
+  const list = state.orders.filter((o) => o.orderValue > o.received);
+  return `${renderTopBar('Outstanding Payments', { back: true, fallback: 'payments-dashboard' })}<div class="phone-scroll p-3.5 space-y-2.5">${list.map((o) => `<div class="bg-white border border-amber-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><strong class="text-sm">${esc(o.customer)}</strong><div class="text-slate-500">${esc(o.id)} • Due ${esc(o.dueDate)}</div></div><strong class="text-amber-800">${fmtINR(o.orderValue - o.received)}</strong></div><button type="button" data-open="record-cust-payment" data-key="orderId" data-val="${o.id}" class="w-full py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Record Payment</button></div>`).join('')}</div>`;
+}
+function renderRecordCustPayment() {
+  const o = getOrder(state.selected.orderId);
+  const out = Math.max(0, o.orderValue - o.received);
+  return `${renderTopBar('Record Customer Payment', { back: true, fallback: 'customer-payments' })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3"><strong>${esc(o.customer)} (${esc(o.id)})</strong><div>Outstanding Balance: <strong>${fmtINR(out)}</strong></div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5"><div><label class="block font-medium mb-1">Received Amount (₹) *</label><input id="rcpAmt" type="number" max="${out}" value="${out}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold" /></div><div><label class="block font-medium mb-1">Method</label><select class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"><option>Bank Transfer</option><option>UPI</option><option>Cheque</option><option>Cash</option></select></div></div></div>${renderStickyAction(`<button type="button" data-action="save-cust-pay" data-id="${o.id}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Payment & Sync ERP</button>`)}`;
+}
+function renderSupplierPayments() {
+  return `${renderTopBar('Supplier Payments', { back: true, fallback: 'payments-dashboard' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.supplierPayables.map((s) => `<div class="bg-white border border-slate-200 rounded-xl p-3 space-y-2 text-xs"><div class="flex justify-between"><div><strong class="text-sm">${esc(s.supplier)}</strong><div class="text-[#1D4ED8]">${esc(s.poId)} • ${esc(s.invRef)}</div></div>${badgeHTML(s.status)}</div><div class="flex justify-between text-slate-600"><span>Payable: ${fmtINR(s.payable)}</span><span>Paid: ${fmtINR(s.paid)}</span><span>Pend: <strong>${fmtINR(s.payable - s.paid)}</strong></span></div>${s.payable > s.paid ? `<button type="button" data-open="record-sup-payment" data-key="supPayId" data-val="${s.poId}" class="w-full py-1.5 rounded-lg bg-[#1E3A8A] text-white font-semibold">Record Supplier Payment</button>` : ''}</div>`).join('')}</div>`;
+}
+function renderRecordSupPayment() {
+  const s = state.supplierPayables.find((x) => x.poId === state.selected.supPayId) || state.supplierPayables[0];
+  const pend = Math.max(0, s.payable - s.paid);
+  return `${renderTopBar('Record Supplier Payment', { back: true, fallback: 'supplier-payments' })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3"><strong>${esc(s.supplier)} (${esc(s.poId)})</strong><div>Pending Payable: <strong>${fmtINR(pend)}</strong></div></div><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5"><div><label class="block font-medium mb-1">Payment Amount (₹) *</label><input id="rspAmt" type="number" max="${pend}" value="${pend}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold" /></div></div></div>${renderStickyAction(`<button type="button" data-action="save-sup-pay" data-id="${s.poId}" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Supplier Payment</button>`)}`;
+}
+function renderDeliveryExpenses() {
+  return `${renderTopBar('Delivery Expenses', { back: true, fallback: 'payments-dashboard' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.deliveryExpenses.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 text-xs space-y-1"><div class="flex justify-between"><strong>${esc(d.delId)} • ${esc(d.customer)}</strong>${badgeHTML(d.status)}</div><div class="text-slate-600">${esc(d.method)} • Est: ${fmtINR(d.est)} • Actual: <strong>${fmtINR(d.actual)}</strong></div></div>`).join('')}</div>`;
+}
+
+// 32–39. CENTRALIZED REPORTS (7 REPORTS)
+function renderReportsDashboard() {
+  const cats = [['Sales Reports', 'Enquiries, quotes & order values', 'report-sales'], ['Production Reports', 'PRO status, QC & rework', 'report-production'], ['Inventory Reports', 'In-stock, low & out-of-stock', 'report-inventory'], ['Purchase Reports', 'Supplier POs & receipts', 'report-purchase'], ['Delivery Reports', 'Dispatches, delays & expenses', 'report-logistics'], ['Payment Reports', 'Customer receipts vs payables', 'report-payment'], ['Order Status Reports', 'Pipeline across all departments', 'report-order-status']];
+  return `${renderTopBar('Reports', { right: `<button type="button" data-action="toast" data-msg="Exported Executive Summary PDF" class="text-xs font-semibold text-[#1D4ED8]">Export</button>` })}<div class="phone-scroll p-3.5 space-y-2">${cats.map(([t, d, sc]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-3.5 flex justify-between items-center text-left"><div><div class="text-sm font-semibold text-slate-900">${t}</div><div class="text-xs text-slate-500">${d}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div>${renderAdminBottomNav('reports')}`;
+}
+function renderSimpleReport(title, stats, rows, note = '') {
+  return `${renderTopBar(title, { back: true, fallback: 'reports-dashboard', right: `<button type="button" data-action="toast" data-msg="Exported ${title} (PDF / Excel)" class="px-2.5 py-1 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">Export</button>` })}<div class="phone-scroll p-3.5 space-y-3"><div class="grid grid-cols-2 gap-2">${stats.map(([l, v]) => `<div class="bg-white border border-slate-200 rounded-xl p-2.5"><div class="text-[10px] text-slate-500">${l}</div><div class="text-sm font-bold text-[#1E3A8A] mt-0.5">${v}</div></div>`).join('')}</div>${note ? `<div class="bg-slate-100 rounded-lg p-2.5 text-[11px] text-slate-600">${note}</div>` : ''}<div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">${rows.map(([a, b, c]) => `<div class="px-3 py-2.5 flex justify-between items-center"><div><div class="font-semibold text-slate-900">${a}</div><div class="text-[11px] text-slate-500">${b}</div></div><strong class="text-slate-800">${c}</strong></div>`).join('')}</div></div>`;
+}
+
+// 40–47. NOTIFICATIONS, ACTIVITY LOGS, DOCUMENT CENTRE, SETTINGS
+function renderNotifications() {
+  const list = state.notifications.filter((n) => state.filters.notifDept === 'All' || n.dept === state.filters.notifDept);
+  return `${renderTopBar('Notifications', { back: true, fallback: 'dashboard', right: `<button type="button" data-action="mark-all-read" class="text-xs font-semibold text-[#1D4ED8]">Mark All Read</button>` })}<div class="bg-white border-b px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${['All', 'Sales', 'Production', 'Supply Chain', 'Logistics', 'Payments', 'Employees'].map((d) => `<button type="button" data-filter-tab="notifDept" data-val="${d}" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap border ${state.filters.notifDept === d ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${d}</button>`).join('')}</div><div class="phone-scroll p-3.5 space-y-2">${list.map((n) => `<button type="button" data-action="open-notif" data-id="${n.id}" class="w-full text-left bg-white border ${n.unread ? 'border-blue-200 bg-blue-50/30' : 'border-slate-200'} rounded-xl p-3 space-y-1 text-xs"><div class="flex justify-between text-[10px]"><span class="font-semibold uppercase text-[#1D4ED8]">${esc(n.dept)}</span><span class="text-slate-400">${esc(n.time)}</span></div><div class="font-semibold">${esc(n.title)}</div><div class="text-slate-600">${esc(n.desc)}</div></button>`).join('')}</div>`;
+}
+function renderActivityLogs() {
+  return `${renderTopBar('Activity Logs', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-2">${state.activityLogs.map((l) => `<button type="button" data-open="activity-details" data-key="logId" data-val="${l.id}" class="w-full text-left bg-white border border-slate-200 rounded-xl p-3 space-y-1 text-xs"><div class="flex justify-between"><span class="font-semibold text-[#1D4ED8]">${esc(l.type)} • ${esc(l.dept)}</span><span class="text-[10px] text-slate-400">${esc(l.time)}</span></div><div class="font-semibold text-slate-900">${esc(l.ref)} — ${esc(l.desc)}</div><div class="text-[10px] text-slate-400">By ${esc(l.by)}</div></button>`).join('')}</div>`;
+}
+function renderActivityDetails() {
+  const l = getLog(state.selected.logId);
+  return `${renderTopBar('Activity Details', { back: true, fallback: 'activity-logs' })}<div class="phone-scroll p-3.5"><div class="bg-white border border-slate-200 rounded-xl p-4 text-xs space-y-2.5"><div class="font-bold text-[#1E3A8A] text-sm">${esc(l.type)} (${esc(l.dept)})</div><div>Record: <strong>${esc(l.ref)}</strong> • By <strong>${esc(l.by)}</strong></div><div class="bg-slate-50 rounded-lg p-2.5"><strong>Previous:</strong> ${esc(l.prev)}</div><div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 text-emerald-800"><strong>Updated:</strong> ${esc(l.next)}</div><div class="text-[10px] text-slate-400">Read-only audit trail. Passwords & tokens are never recorded.</div></div></div>`;
+}
+function renderDocumentCentre() {
+  return `${renderTopBar('Document Centre', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-2.5">${state.documents.map((d) => `<div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center text-xs"><div><div class="font-semibold text-slate-900">${esc(d.name)} — <span class="text-[#1D4ED8]">${esc(d.ref)}</span></div><div class="text-slate-500">${esc(d.party)} • ${esc(d.date)}</div></div><button type="button" data-action="toast" data-msg="Downloaded ${d.ref}.pdf" class="px-2.5 py-1.5 rounded-lg bg-blue-50 text-[#1D4ED8] font-semibold">PDF</button></div>`).join('')}</div>`;
+}
+function renderCompanySettings() {
+  return `${renderTopBar('Company Settings', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-2.5 text-xs">${[['Edit Company Profile', state.company.name, 'edit-company'], ['Document Settings', 'Prefixes ENQ-001 → DC-001, logo & terms', 'doc-settings'], ['Workflow Controls', 'Approval & integrity rules (8 controls)', 'workflow-settings']].map(([t, d, sc]) => `<button type="button" data-nav="${sc}" class="w-full bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center text-left hover:border-[#1D4ED8]"><div><div class="text-sm font-semibold">${t}</div><div class="text-slate-500">${esc(d)}</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button>`).join('')}</div>`;
+}
+function renderEditCompany() {
+  const c = state.company;
+  return `${renderTopBar('Edit Company Profile', { back: true, fallback: 'company-settings' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Company Name</label><input id="cName" type="text" value="${esc(c.name)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Email</label><input id="cEmail" type="email" value="${esc(c.email)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Phone</label><input id="cPhone" type="tel" value="${esc(c.phone)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">GSTIN</label><input id="cGstin" type="text" value="${esc(c.gstin)}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Address</label><textarea id="cAddr" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">${esc(c.address)}</textarea></div></div></div>${renderStickyAction(`<button type="button" data-action="save-company" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Company Details</button>`)}`;
+}
+function renderDocSettings() {
+  return `${renderTopBar('Document Settings', { back: true, fallback: 'company-settings' })}<div class="phone-scroll p-3.5 space-y-3 text-xs"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="font-semibold text-[#1E3A8A] uppercase">Active Numbering Prefixes</div><div class="grid grid-cols-2 gap-1.5">${['ENQ-001', 'QT-001', 'PI-001', 'SO-001', 'PRO-001', 'MR-001', 'PO-001', 'GRN-001', 'DEL-001', 'DC-001'].map((p) => `<div class="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 font-mono font-semibold text-slate-700">${p}</div>`).join('')}</div><div class="text-[11px] text-slate-400 pt-1">Duplicate numbers prevented; finalized records are never renumbered.</div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Document numbering settings saved" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Settings</button>`)}`;
+}
+function renderWorkflowSettings() {
+  const items = [['discountApproval', 'Require quotation discount approval'], ['poApproval', 'Require Purchase Order approval'], ['stockAdjApproval', 'Require stock adjustment approval'], ['qcBeforeDispatch', 'Require Quality Check before dispatch'], ['partialMaterialProd', 'Allow authorized partial-material production'], ['partialDeliveries', 'Allow partial deliveries'], ['requirePOD', 'Require Proof of Delivery (POD)'], ['enforcePaymentTerms', 'Enforce agreed payment terms before dispatch']];
+  return `${renderTopBar('Workflow Settings', { back: true, fallback: 'company-settings' })}<div class="phone-scroll p-3.5 space-y-2"><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">${items.map(([k, lbl]) => `<label class="px-3.5 py-3 flex items-center justify-between gap-2 cursor-pointer"><span>${lbl}</span><input type="checkbox" data-wf-toggle="${k}" ${state.workflowToggles[k] ? 'checked' : ''} class="rounded text-[#1E3A8A]" /></label>`).join('')}</div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Workflow controls saved" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Save Settings</button>`)}`;
+}
+
+// 48–51. MORE, PROFILE, CHANGE PASSWORD, UI STATES (15)
+function renderMore() {
+  return `${renderTopBar('More')}<div class="phone-scroll p-3.5 space-y-4"><button type="button" data-nav="profile" class="w-full bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 text-left"><div class="w-10 h-10 rounded-full bg-[#1E3A8A] text-white font-bold text-sm flex items-center justify-center">AD</div><div class="flex-1"><div class="text-sm font-semibold">Cryo ERP Admin</div><div class="text-xs text-slate-500">Full Authorized Enterprise Access</div></div><i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i></button><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs font-medium">${[['Centralized Master Data', 'master-data'], ['Payments & Expenses', 'payments-dashboard'], ['Pending Actions', 'pending-actions'], ['Approvals Queue', 'approvals'], ['Document Centre', 'document-centre'], ['Activity Logs', 'activity-logs'], ['Company Settings', 'company-settings'], ['Common UI States (15)', 'ui-states'], ['Admin Profile', 'profile'], ['Change Password', 'change-password']].map(([l, s]) => `<button type="button" data-nav="${s}" class="w-full px-3.5 py-2.5 flex justify-between hover:bg-slate-50"><span>${l}</span><i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i></button>`).join('')}<button type="button" data-nav="admin-login" class="w-full px-3.5 py-2.5 flex justify-between text-rose-600"><span>Logout</span><i data-lucide="log-out" class="w-4 h-4"></i></button></div></div>${renderAdminBottomNav('more')}`;
+}
+function renderProfile() {
+  return `${renderTopBar('Admin Profile', { back: true, fallback: 'more' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-4 text-center"><div class="w-16 h-16 rounded-full bg-[#1E3A8A] text-white font-bold text-lg flex items-center justify-center mx-auto mb-2">AD</div><div class="text-base font-semibold">Cryo ERP Administrator</div><div class="text-xs text-[#1D4ED8]">EMP-ADM-001 • All 5 Departments</div></div><div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs"><div class="px-3.5 py-2.5 flex justify-between"><span class="text-slate-500">Email</span><strong>admin@cryoerp.com</strong></div><div class="px-3.5 py-2.5 flex justify-between"><span class="text-slate-500">Phone</span><strong>+91 98401 00001</strong></div></div><button type="button" data-nav="change-password" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold">Change Password</button><button type="button" data-nav="admin-login" class="w-full py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">Logout</button></div>`;
+}
+function renderChangePassword() {
+  return `${renderTopBar('Change Password', { back: true, fallback: 'profile' })}<div class="phone-scroll p-3.5 space-y-3"><div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 text-xs"><div><label class="block font-medium mb-1">Current Password *</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">New Password *</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div><div><label class="block font-medium mb-1">Confirm New Password *</label><input type="password" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg" /></div></div></div>${renderStickyAction(`<button type="button" data-action="toast" data-msg="Admin password updated" class="flex-1 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-xs font-semibold">Update Password</button>`)}`;
+}
+function renderUIStates() {
+  const s15 = [
+    ['no-orders', 'No Orders', 'package', 'text-slate-300', 'No orders found', 'Confirmed Sales Orders across departments appear here.', 'Open Sales', 'ws-sales'],
+    ['no-pending', 'No Pending', 'check-circle-2', 'text-emerald-400', 'No pending actions', 'All departments are up to date.', 'Dashboard', 'dashboard'],
+    ['no-approvals', 'No Approvals', 'shield-check', 'text-emerald-400', 'No pending approvals', 'All exception requests have been reviewed.', 'Dashboard', 'dashboard'],
+    ['no-search', 'No Search', 'search-x', 'text-slate-300', 'No search results', 'Try searching by SO-001, ABC Laboratory, or Deep Freezer.', 'Global Search', 'global-search'],
+    ['no-reports', 'No Reports', 'bar-chart-3', 'text-slate-300', 'No data in date range', 'Try selecting This Month for complete ERP reports.', 'Reports', 'reports-dashboard'],
+    ['no-notifs', 'No Notifs', 'bell-off', 'text-slate-300', 'No new notifications', 'Important cross-department alerts appear here.', 'Dashboard', 'dashboard'],
+    ['loading', 'Loading', '', '', '', '', '', ''],
+    ['success', 'Success', 'check-circle-2', 'text-emerald-500', 'Action Completed', 'Change synced across all connected ERP departments.', 'Done', 'dashboard'],
+    ['validation', 'Validation', 'alert-circle', 'text-rose-500', 'Required Field Missing', 'Enter a reason before cancelling or rejecting a request.', 'Review', 'approvals'],
+    ['network', 'Network Error', 'wifi-off', 'text-rose-400', 'Sync Interrupted', 'Check your connection and tap retry.', 'Retry', 'dashboard'],
+    ['cancel-confirm', 'Cancel Confirm', 'alert-triangle', 'text-rose-500', 'Confirm Order Cancellation?', 'Shows linked PRO-001, MR-001 & ₹1,00,000 payment impacts first.', 'Review Impacts', 'order-hold-cancel'],
+    ['edit-confirm', 'Edit Confirm', 'edit-3', 'text-[#1E3A8A]', 'Save Master Update?', 'Updates apply to newly created records while preserving history.', 'Settings', 'company-settings'],
+    ['approval-confirm', 'Approval Confirm', 'check-square', 'text-emerald-600', 'Approve QT-005 Discount?', '12% institutional discount will be logged in Activity Logs.', 'Open Approvals', 'approvals'],
+    ['perm-denied', 'Perm Denied', 'shield-off', 'text-rose-600', 'Controlled Action', 'Finalized transactions require reversal rather than direct delete.', 'Activity Logs', 'activity-logs'],
+    ['processed', 'Already Done', 'check-check', 'text-slate-500', 'Record Already Processed', 'GRN-001 has already been confirmed and synced to inventory.', 'View Logs', 'activity-logs']
+  ];
+  const cur = s15.find((x) => x[0] === state.uiStateDemo) || s15[12];
+  const body = cur[0] === 'loading'
+    ? `<div class="space-y-2.5">${[1, 2, 3].map(() => `<div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2"><div class="h-3 w-24 skeleton"></div><div class="h-4 w-44 skeleton"></div><div class="h-3 w-full skeleton"></div></div>`).join('')}</div>`
+    : `<div class="bg-white border border-slate-200 rounded-xl p-6 text-center space-y-2"><i data-lucide="${cur[2]}" class="w-10 h-10 ${cur[3]} mx-auto"></i><div class="text-sm font-semibold">${cur[4]}</div><div class="text-xs text-slate-500">${cur[5]}</div><button type="button" data-nav="${cur[7]}" class="mt-2 px-4 py-2 rounded-lg bg-[#1E3A8A] text-white text-xs font-semibold">${cur[6]}</button></div>`;
+  return `${renderTopBar('Common UI States (15)', { back: true, fallback: 'more' })}<div class="bg-white border-b px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar shrink-0">${s15.map((s) => `<button type="button" data-action="set-ui-state" data-val="${s[0]}" class="px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap border ${cur[0] === s[0] ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${s[1]}</button>`).join('')}</div><div class="phone-scroll p-3.5 flex flex-col justify-center">${body}</div>`;
+}
+
+/* ---------- ROUTER, SIDEBAR, GALLERY & ERP MAP ---------- */
+function renderScreenMarkup(id) {
+  const map = {
+    'admin-login': renderAdminLogin, 'dashboard': renderDashboard, 'departments-overview': renderDepartmentsOverview, 'dept-switcher': renderDeptSwitcher,
+    'ws-sales': () => renderDeptWorkspace('Sales Management', 'All Enquiries, Quotations, PI, CPO, Payments & Sales Orders with full Admin actions.', [['Enquiries (4)', 'New, Follow-up, Qualified', ''], ['Quotations (5)', 'Draft, Sent, Negotiation', ''], ['Sales Orders (4)', 'Confirmed → Production', 'all-orders'], ['Customers & Products', 'Shared Master Data', 'master-data']], [['Home', 'home'], ['Enquiries', 'clipboard-list'], ['Follow-ups', 'calendar-clock'], ['Orders', 'file-text'], ['More', 'grid']]),
+    'ws-production': () => renderDeptWorkspace('Production Management', 'Incoming SOs, Production Orders, BOM, Material Receipts, Daily Updates & Quality Check.', [['Production Orders (4)', 'PRO-001 In Production', 'all-orders'], ['BOM Templates (3)', 'BOM-001 Deep Freezer', ''], ['Daily Updates', 'Track team progress', ''], ['Quality Check', 'Inspect & Rework', '']], [['Home', 'home'], ['Orders', 'clipboard-list'], ['Materials', 'layers'], ['Production', 'factory'], ['More', 'grid']]),
+    'ws-supply-chain': () => renderDeptWorkspace('Supply Chain Management', 'Material Requests, Stock Check, Inventory, Suppliers, POs, GRN & Material Issues.', [['Material Requests', 'MR-001 & MR-004', ''], ['Inventory & Stock', '2 Low / Out of Stock', 'report-inventory'], ['Purchase Orders', 'PO-001 ABC Industrial', 'supplier-payments'], ['GRN & Issues', 'GRN-001, MI-001/002', '']], [['Home', 'home'], ['Requests', 'clipboard-list'], ['Inventory', 'boxes'], ['Purchase', 'shopping-cart'], ['More', 'grid']]),
+    'ws-logistics': () => renderDeptWorkspace('Logistics & Delivery', 'Ready Orders, Own Vehicle & Courier Delivery Plans, Packing, Challans, Tracking & POD.', [['Ready for Delivery', 'SO-002 Apex Pharma', 'all-orders'], ['Packing & Challans', 'PKG-001 & DC-001', 'document-centre'], ['Own Vehicle / Courier', 'TN 01 AB 1234 / LR-10001', ''], ['Transport Expenses', 'Fuel, Toll & Freight', 'delivery-expenses']], [['Home', 'home'], ['Orders', 'package'], ['Dispatch', 'truck'], ['Tracking', 'map-pin'], ['More', 'grid']]),
+    'ws-employees': () => renderDeptWorkspace('Employee & Permissions', 'Create employees, assign departments, configure screen/action matrices & manage login accounts.', [['Employees (4)', 'EMP-001 Arun Kumar', ''], ['Departments (5)', 'All 5 ERP modules', 'departments-overview'], ['Roles & Matrix', 'Screen & action controls', ''], ['Activity Logs', 'Read-only audit trail', 'activity-logs']], [['Home', 'home'], ['Employees', 'users'], ['Depts', 'building-2'], ['Access', 'shield-check'], ['More', 'grid']]),
+    'global-search': renderGlobalSearch, 'all-orders': renderAllOrders, 'order-journey': renderOrderJourney, 'manage-order': renderManageOrder, 'order-hold-cancel': renderOrderHoldCancel,
+    'pending-actions': renderPendingActions, 'approvals': renderApprovals, 'approval-details': renderApprovalDetails,
+    'master-data': renderMasterData, 'customers-admin': renderCustomersAdmin, 'products-admin': renderProductsAdmin,
+    'payments-dashboard': renderPaymentsDashboard, 'customer-payments': renderCustomerPayments, 'outstanding-payments': renderOutstandingPayments, 'record-cust-payment': renderRecordCustPayment,
+    'supplier-payments': renderSupplierPayments, 'record-sup-payment': renderRecordSupPayment, 'delivery-expenses': renderDeliveryExpenses,
+    'reports-dashboard': renderReportsDashboard,
+    'report-sales': () => renderSimpleReport('Sales Reports', [['Total Order Value', '₹8,23,220'], ['Confirmed Orders', '4'], ['Accepted Quotes', '4'], ['Rejected Quotes', '1']], state.orders.map((o) => [o.id, `${o.customer} • ${o.product}`, fmtINR(o.orderValue)]), 'Sales order value is tracked separately from actual customer payment receipts.'),
+    'report-production': () => renderSimpleReport('Production Reports', [['Total PROs', '4'], ['In Production', '1'], ['Wait Materials', '1'], ['Completed', '2']], state.orders.map((o) => [o.refs.pro, `${o.product} (${o.qty} units)`, o.stage])),
+    'report-inventory': () => renderSimpleReport('Inventory Reports', [['Total Materials', '4'], ['In Stock', '2'], ['Low Stock', '1'], ['Out of Stock', '1']], [['Compressor (RM-101)', '2 Pieces available', 'In Stock'], ['Steel Sheet (RM-102)', '5 Sheets available', 'Low Stock'], ['Temp Controller (RM-103)', '0 Pieces available', 'Out of Stock']]),
+    'report-purchase': () => renderSimpleReport('Purchase Reports', [['Confirmed POs', '2'], ['Total PO Value', '₹71,156'], ['Fully Received', '1'], ['Open / Partial', '1']], state.supplierPayables.map((s) => [s.poId, s.supplier, fmtINR(s.payable)])),
+    'report-logistics': () => renderSimpleReport('Logistics Reports', [['Planned / Ready', '2'], ['Delivered', '1'], ['Delayed', '1'], ['Transport Expenses', '₹6,500']], state.deliveryExpenses.map((d) => [d.delId, `${d.customer} (${d.method})`, fmtINR(d.actual)])),
+    'report-payment': () => renderSimpleReport('Payment Reports', [['Customer Received', '₹6,19,520'], ['Customer Outstanding', '₹2,03,700'], ['Supplier Paid', '₹58,500'], ['Delivery Expenses', '₹6,500']], [['Customer Receipts', 'Shared across Sales & Logistics', '₹6,19,520'], ['Supplier Payables Paid', 'ABC Industrial + Precision Thermal', '₹58,500'], ['Transport Expenses', 'Own Vehicle + Courier', '₹6,500']], 'Customer receipts and company payables/expenses are shown separately; net profit is not estimated here.'),
+    'report-order-status': () => renderSimpleReport('Order Status Reports', [['In Production', '1'], ['Wait Materials', '1'], ['Ready Delivery', '1'], ['Delivered', '1']], state.orders.map((o) => [o.id, `${o.customer} (${o.dept.replace(' Management', '')})`, o.stage])),
+    'notifications': renderNotifications, 'activity-logs': renderActivityLogs, 'activity-details': renderActivityDetails, 'document-centre': renderDocumentCentre,
+    'company-settings': renderCompanySettings, 'edit-company': renderEditCompany, 'doc-settings': renderDocSettings, 'workflow-settings': renderWorkflowSettings,
+    'more': renderMore, 'profile': renderProfile, 'change-password': renderChangePassword, 'ui-states': renderUIStates
+  };
+  return (map[id] || renderDashboard)();
+}
+
+function renderSidebar() {
+  document.getElementById('sbModeFlowBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'flow' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sbModeAllBtn').className = `py-1.5 text-xs font-semibold rounded-md transition ${state.sidebarMode === 'all' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`;
+  document.getElementById('sidebarSearchWrap').classList.toggle('hidden', state.sidebarMode !== 'all');
+  const c = document.getElementById('sidebarList');
+
+  if (state.sidebarMode === 'flow') {
+    const steps = [
+      ['★', 'Centralized Admin Dashboard', 'Business overview, 6 depts & alerts', 'dashboard'],
+      ['1', '22-Stage Order Journey', 'Track SO-001 (ENQ-001 → DC-001)', 'order-journey'],
+      ['2', 'Open Any Department', 'Switch to Sales, Prod, SCM, Log or Emp', 'departments-overview'],
+      ['3', 'Pending Actions & Approvals', 'Approve discounts, materials & stock', 'approvals'],
+      ['4', 'Payments & Expenses', 'Customer receipts vs supplier payables', 'payments-dashboard'],
+      ['5', '7 Department Reports', 'Sales, Prod, Inventory, PO, Log, Pay', 'reports-dashboard'],
+      ['6', 'Docs, Logs & Settings', 'Document Centre, Audit & Controls', 'company-settings']
+    ];
+    c.innerHTML = `<div class="px-1.5 pt-1 pb-2"><div class="text-xs font-semibold text-slate-900">Admin Quick Guide</div><div class="text-[11px] text-slate-500 mt-0.5">Manage the entire company from one app.</div></div><div class="space-y-1.5 px-1">${steps.map(([n, t, d, sc]) => `<button type="button" data-sidebar-screen="${sc}" class="w-full p-2.5 rounded-xl text-left border transition flex items-start gap-2.5 ${state.screen === sc && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-800 border-slate-200 hover:border-[#1D4ED8]'}"><span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 ${state.screen === sc && state.viewMode === 'phone' ? 'bg-white text-[#1E3A8A]' : 'bg-blue-50 text-[#1E3A8A]'}">${n}</span><div><div class="text-xs font-semibold leading-tight">${t}</div><div class="text-[11px] mt-0.5 ${state.screen === sc && state.viewMode === 'phone' ? 'text-blue-100' : 'text-slate-500'}">${d}</div></div></button>`).join('')}</div><div class="px-1 pt-2 border-t border-slate-200"><button type="button" data-sidebar-screen="ui-states" class="w-full px-2.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 text-left">Common UI States (15)</button></div>`;
+    return;
+  }
+
+  const sv = (document.getElementById('sidebarSearch')?.value || '').trim().toLowerCase();
+  c.innerHTML = SCREEN_CATALOG.map((grp) => {
+    const items = grp.items.filter((i) => !sv || `${i.num} ${i.title} ${grp.group}`.toLowerCase().includes(sv));
+    if (!items.length) return '';
+    return `<div><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1">${esc(grp.group)}</div><div class="space-y-0.5">${items.map((it) => `<button type="button" data-sidebar-screen="${it.id}" class="w-full px-2.5 py-1.5 rounded-lg text-left text-xs ${state.screen === it.id && state.viewMode === 'phone' ? 'bg-[#1E3A8A] text-white font-semibold' : 'text-slate-700 hover:bg-slate-100'}"><span class="opacity-60 mr-1.5">${it.num}.</span>${esc(it.title)}</button>`).join('')}</div></div>`;
+  }).join('');
+}
+
+function renderGallery() {
+  const c = document.getElementById('galleryContainer');
+  const all = SCREEN_CATALOG.flatMap((g) => g.items.map((i) => ({ ...i, group: g.group })));
+  const groups = ['All', ...SCREEN_CATALOG.map((g) => g.group)];
+  const shown = state.galleryCategory === 'All' ? all : all.filter((i) => i.group === state.galleryCategory);
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h2 class="text-base font-bold">All 47 Centralized Admin Screens</h2><p class="text-xs text-slate-500">Click any screen card to open it in the live mobile app.</p></div><div class="flex gap-1.5 overflow-x-auto no-scrollbar">${groups.map((g) => `<button type="button" data-gallery-cat="${esc(g)}" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border ${state.galleryCategory === g ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'bg-white text-slate-600 border-slate-200'}">${esc(g)}</button>`).join('')}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">${shown.map((it) => `<div data-gallery-open="${it.id}" class="bg-white border border-slate-200 rounded-2xl p-3 cursor-pointer hover:border-[#1D4ED8] hover:shadow-md transition flex flex-col"><div class="text-xs font-semibold mb-2 truncate"><span class="text-[#1D4ED8] mr-1">#${it.num}</span>${esc(it.title)}</div><div class="gallery-mini-phone pointer-events-none select-none"><div class="origin-top-left w-[360px] h-[640px] scale-[0.65] flex flex-col bg-[#F8FAFC]">${renderScreenMarkup(it.id)}</div></div></div>`).join('')}</div>`;
+  lucide.createIcons({ nodes: [c] });
+}
+
+function renderWorkflowMap() {
+  const c = document.getElementById('workflowContainer');
+  const modules = [
+    ['Sales', 'ENQ-001 → QT-001 → PI-001 → CPO-001 → SO-001', 'ws-sales'],
+    ['Production', 'PRO-001 → BOM-001 → Daily Build → Quality Check', 'ws-production'],
+    ['Supply Chain', 'MR-001 → Stock Check → PO-001 → GRN-001 → MI-001/002', 'ws-supply-chain'],
+    ['Logistics', 'DEL-001 → Packing → DC-001 → Dispatch → POD', 'ws-logistics'],
+    ['Employees', 'Single Login → Multi-Dept Access → Permissions & Audit', 'ws-employees'],
+    ['Central Admin', '22-Stage Order Journey, Approvals, Finance & 7 Reports', 'order-journey']
+  ];
+  c.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4"><div><h2 class="text-base font-bold">Cryo Enterprise ERP – Unified Architecture (One Source of Truth)</h2><p class="text-xs text-slate-500">Same linked record (SO-001 • ABC Laboratory • Deep Freezer × 2 • ₹1,50,000) across every department.</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-3">${modules.map(([t, d, sc]) => `<button type="button" data-gallery-open="${sc}" class="text-left bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-[#1D4ED8] rounded-xl p-4 space-y-1.5"><div class="text-sm font-bold text-[#1E3A8A]">${t}</div><div class="text-xs text-slate-600">${d}</div></button>`).join('')}</div></div>`;
+}
+
+function renderAll() {
+  ['Phone', 'Gallery', 'Flow'].forEach((m) => {
+    const key = m.toLowerCase() === 'flow' ? 'workflow' : m.toLowerCase();
+    document.getElementById(`mode${m}Btn`).className = `px-2.5 py-1 text-xs font-medium rounded-md transition flex items-center gap-1 ${state.viewMode === key ? 'bg-[#1E3A8A] text-white shadow-sm' : 'text-slate-600'}`;
+  });
+  document.getElementById('phoneContainer').classList.toggle('hidden', state.viewMode !== 'phone');
+  document.getElementById('galleryContainer').classList.toggle('hidden', state.viewMode !== 'gallery');
+  document.getElementById('workflowContainer').classList.toggle('hidden', state.viewMode !== 'workflow');
+  renderSidebar();
+  if (state.viewMode === 'phone') {
+    const root = document.getElementById('screenRoot');
+    root.innerHTML = renderScreenMarkup(state.screen);
+    lucide.createIcons({ nodes: [root] });
+    const meta = SCREEN_CATALOG.flatMap((g) => g.items).find((i) => i.id === state.screen);
+    const metaEl = document.getElementById('screenFooterMeta');
+    if (meta && metaEl) metaEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-[#1E3A8A]">Screen #${meta.num}</span><span>${esc(meta.title)}</span><span>•</span><span><strong>Centralized Admin</strong></span>`;
+  } else if (state.viewMode === 'gallery') renderGallery();
+  else renderWorkflowMap();
+}
+
+/* ---------- EVENTS ---------- */
+document.getElementById('modePhoneBtn').addEventListener('click', () => { state.viewMode = 'phone'; renderAll(); });
+document.getElementById('modeGalleryBtn').addEventListener('click', () => { state.viewMode = 'gallery'; renderAll(); });
+document.getElementById('modeFlowBtn').addEventListener('click', () => { state.viewMode = 'workflow'; renderAll(); });
+document.getElementById('sbModeFlowBtn').addEventListener('click', () => { state.sidebarMode = 'flow'; renderSidebar(); });
+document.getElementById('sbModeAllBtn').addEventListener('click', () => { state.sidebarMode = 'all'; renderSidebar(); });
+document.getElementById('sidebarSearch').addEventListener('input', () => renderSidebar());
+
+const sidebarEl = document.getElementById('screenSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+document.getElementById('toggleSidebarBtn').addEventListener('click', () => { sidebarEl.classList.toggle('-translate-x-full'); sidebarOverlay.classList.toggle('hidden'); });
+sidebarOverlay.addEventListener('click', () => { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); });
+
+document.addEventListener('input', (e) => {
+  const f = e.target.dataset.filter;
+  if (f) { state.filters[f] = e.target.value; const p = e.target.selectionStart; renderAll(); const el = document.querySelector(`[data-filter="${f}"]`); if (el) { el.focus(); el.setSelectionRange(p, p); } }
+});
+document.addEventListener('change', (e) => {
+  if (e.target.dataset.wfToggle) { state.workflowToggles[e.target.dataset.wfToggle] = e.target.checked; }
+});
+
+document.addEventListener('click', (e) => {
+  const sb = e.target.closest('[data-sidebar-screen]');
+  if (sb) { sidebarEl.classList.add('-translate-x-full'); sidebarOverlay.classList.add('hidden'); navigate(sb.dataset.sidebarScreen); return; }
+  const gc = e.target.closest('[data-gallery-cat]');
+  if (gc) { state.galleryCategory = gc.dataset.galleryCat; renderGallery(); return; }
+  const go = e.target.closest('[data-gallery-open]');
+  if (go) { navigate(go.dataset.galleryOpen); return; }
+  const nav = e.target.closest('[data-nav]');
+  if (nav) { navigate(nav.dataset.nav); return; }
+  const opn = e.target.closest('[data-open]');
+  if (opn) { navigate(opn.dataset.open, { key: opn.dataset.key, val: opn.dataset.val }); return; }
+  const ft = e.target.closest('[data-filter-tab]');
+  if (ft) { state.filters[ft.dataset.filterTab] = ft.dataset.val; renderAll(); return; }
+
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const act = btn.dataset.action;
+
+  if (act === 'go-back') goBack(btn.dataset.fallback || 'dashboard');
+  else if (act === 'toast') showToast(btn.dataset.msg);
+  else if (act === 'toggle-pwd') { state.showPwd = !state.showPwd; renderAll(); }
+  else if (act === 'set-date') { state.dateFilter = btn.dataset.val; renderAll(); }
+  else if (act === 'quick-search') { state.filters.globalQuery = btn.dataset.val; renderAll(); }
+  else if (act === 'confirm-hc') {
+    const o = getOrder(btn.dataset.id);
+    const reason = (document.getElementById('hcReason')?.value || '').trim();
+    if (!reason) { showToast('Reason is required', 'error'); return; }
+    o.stage = document.getElementById('hcAct')?.value || 'On Hold';
+    navigate('all-orders'); showToast(`${o.id} updated to ${o.stage}`);
+  } else if (act === 'apr-decide') {
+    const a = getApproval(btn.dataset.id); a.status = btn.dataset.val;
+    state.activityLogs.unshift({ id: `LOG-0${state.activityLogs.length + 1}`, type: a.status, dept: a.dept, ref: a.ref, by: 'Admin', time: 'Just now', desc: `${a.status} ${a.type}`, prev: 'Pending', next: a.status });
+    navigate('approvals'); showToast(`${a.ref} ${a.status}`);
+  } else if (act === 'save-cust-pay') {
+    const o = getOrder(btn.dataset.id); const amt = Number(document.getElementById('rcpAmt')?.value) || 0;
+    if (amt <= 0) { showToast('Enter valid amount', 'error'); return; }
+    o.received = Math.min(o.orderValue, o.received + amt);
+    o.paymentStatus = o.received >= o.orderValue ? 'Paid' : 'Partially Paid';
+    navigate('customer-payments'); showToast(`Recorded ${fmtINR(amt)} & synced across Sales, Logistics & Admin`);
+  } else if (act === 'save-sup-pay') {
+    const s = state.supplierPayables.find((x) => x.poId === btn.dataset.id);
+    const amt = Number(document.getElementById('rspAmt')?.value) || 0;
+    if (s && amt > 0) { s.paid = Math.min(s.payable, s.paid + amt); s.status = s.paid >= s.payable ? 'Paid' : 'Partially Paid'; }
+    navigate('supplier-payments'); showToast(`Recorded supplier payment ${fmtINR(amt)}`);
+  } else if (act === 'save-company') {
+    Object.assign(state.company, { name: document.getElementById('cName')?.value || state.company.name, email: document.getElementById('cEmail')?.value || state.company.email, phone: document.getElementById('cPhone')?.value || state.company.phone, gstin: document.getElementById('cGstin')?.value || state.company.gstin, address: document.getElementById('cAddr')?.value || state.company.address });
+    navigate('company-settings'); showToast('Company profile updated');
+  } else if (act === 'open-notif') {
+    const n = state.notifications.find((x) => x.id === btn.dataset.id);
+    if (n) { n.unread = false; navigate(n.screen); }
+  } else if (act === 'mark-all-read') { state.notifications.forEach((n) => { n.unread = false; }); renderAll(); showToast('All notifications marked read'); }
+  else if (act === 'set-ui-state') { state.uiStateDemo = btn.dataset.val; renderAll(); }
+});
+
+renderAll();
+</script>
+</body>
+</html>
